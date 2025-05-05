@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAccount, useWalletClient } from "wagmi";
 import { parseEther, formatEther } from "viem";
+import { toast } from "react-toastify";
 import PlinkoBoard from "../components/PlinkoBoard";
+import ParticipantSlots from "../components/ParticipantSlots";
 import { getContract } from "../utils/contract";
 
 interface Participant {
@@ -19,7 +21,7 @@ const DropDetailPage: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const rows = 10;
+  const rows = 16; // Matches old UI
 
   useEffect(() => {
     const fetchDropInfo = async () => {
@@ -36,14 +38,14 @@ const DropDetailPage: React.FC = () => {
           address: contractAddress as `0x${string}`,
           abi,
           functionName: "getDropInfo",
-          args: [Number(dropId)],
+          args: [BigInt(dropId)],
         })) as any;
 
         const [addresses, names] = (await publicClient.readContract({
           address: contractAddress as `0x${string}`,
           abi,
           functionName: "getDropParticipants",
-          args: [Number(dropId)],
+          args: [BigInt(dropId)],
         })) as [string[], string[]];
 
         const participantList = addresses.map(
@@ -71,6 +73,7 @@ const DropDetailPage: React.FC = () => {
         });
       } catch (err) {
         setError("Failed to fetch drop info");
+        toast.error("Failed to fetch drop info");
         console.error("Error fetching drop info:", err);
       } finally {
         setLoading(false);
@@ -88,8 +91,9 @@ const DropDetailPage: React.FC = () => {
         abi,
         eventName: "ParticipantJoined",
         onLogs: (logs) => {
-          const log = logs[0];
-          if (log.dropId?.toString() === dropId) fetchDropInfo();
+          logs.forEach((log) => {
+            if (log.args.dropId.toString() === dropId) fetchDropInfo();
+          });
         },
       });
       publicClient.watchContractEvent({
@@ -97,8 +101,9 @@ const DropDetailPage: React.FC = () => {
         abi,
         eventName: "WinnersSelected",
         onLogs: (logs) => {
-          const log = logs[0];
-          if (log.args?.dropId?.toString() === dropId) fetchDropInfo();
+          logs.forEach((log) => {
+            if (log.args.dropId.toString() === dropId) fetchDropInfo();
+          });
         },
       });
     };
@@ -108,7 +113,10 @@ const DropDetailPage: React.FC = () => {
   }, [dropId]);
 
   const joinDrop = async () => {
-    if (!walletClient || !address || !dropInfo) return;
+    if (!walletClient || !address || !dropInfo) {
+      toast.error("Wallet not connected or drop info unavailable");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -121,13 +129,15 @@ const DropDetailPage: React.FC = () => {
         address: contractAddress as `0x${string}`,
         abi,
         functionName: "joinDrop",
-        args: [Number(dropId), `User-${address.slice(-4)}`],
+        args: [BigInt(dropId), `User-${address.slice(-4)}`],
         value: dropInfo.isPaidEntry ? parseEther(dropInfo.entryFee) : 0n,
       });
       await publicClient.waitForTransactionReceipt({ hash });
+      toast.success("Joined drop successfully");
       console.log("Joined drop:", hash);
     } catch (err) {
       setError("Failed to join drop");
+      toast.error("Failed to join drop");
       console.error("Error joining drop:", err);
     } finally {
       setLoading(false);
@@ -135,7 +145,10 @@ const DropDetailPage: React.FC = () => {
   };
 
   const selectWinnersManually = async (): Promise<number[]> => {
-    if (!walletClient || !dropInfo) return [];
+    if (!walletClient || !dropInfo) {
+      toast.error("Wallet not connected or drop info unavailable");
+      return [];
+    }
     setLoading(true);
     setError(null);
     try {
@@ -153,16 +166,17 @@ const DropDetailPage: React.FC = () => {
         address: contractAddress as `0x${string}`,
         abi,
         functionName: "selectWinnersManually",
-        args: [Number(dropId)],
+        args: [BigInt(dropId)],
       });
       await publicClient.waitForTransactionReceipt({ hash });
+      toast.success("Winners selected successfully");
       console.log("Winners selected:", hash);
 
       const updatedInfo = (await publicClient.readContract({
         address: contractAddress as `0x${string}`,
         abi,
         functionName: "getDropInfo",
-        args: [Number(dropId)],
+        args: [BigInt(dropId)],
       })) as any;
 
       setDropInfo({
@@ -182,6 +196,7 @@ const DropDetailPage: React.FC = () => {
       });
     } catch (err) {
       setError("Failed to select winners");
+      toast.error("Failed to select winners");
       console.error("Error selecting winners:", err);
       throw err;
     } finally {
@@ -194,17 +209,45 @@ const DropDetailPage: React.FC = () => {
   if (!dropInfo) return <div>No drop info available</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl mb-4">Drop #{dropId}</h1>
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="w-full lg:w-1/4 bg-gray-800 p-4 rounded">
-          <h2 className="text-xl mb-2">Participants</h2>
+    <div className="p-4 flex">
+      {/* Left Panel */}
+      <div className="w-1/4 mr-4">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+          <h2 className="text-xl mb-2 text-white font-semibold">
+            Drop #{dropId}
+          </h2>
+          <p className="text-white">Host: {dropInfo.host.slice(0, 6)}...</p>
+          <p className="text-white">Entry Fee: {dropInfo.entryFee} ETH</p>
+          <p className="text-white">Reward: {dropInfo.rewardAmount} ETH</p>
+          <p className="text-white">
+            Participants: {dropInfo.currentParticipants}/
+            {dropInfo.maxParticipants}
+          </p>
+          <p className="text-white">
+            Status:{" "}
+            {dropInfo.isCompleted
+              ? "Ended"
+              : dropInfo.isActive
+              ? "Active"
+              : "Inactive"}
+          </p>
+          {dropInfo.isCompleted && dropInfo.winners.length > 0 && (
+            <p className="text-white">
+              Winners:{" "}
+              {dropInfo.winners
+                .map((w: string) => `${w.slice(0, 6)}...`)
+                .join(", ")}
+            </p>
+          )}
+          <h3 className="text-lg mt-4 mb-2 text-white font-semibold">
+            Participants
+          </h3>
           {participants.length === 0 ? (
-            <p>No participants yet.</p>
+            <p className="text-white">No participants yet.</p>
           ) : (
             <ul>
               {participants.map((participant) => (
-                <li key={participant.slot} className="mb-1">
+                <li key={participant.slot} className="mb-1 text-white">
                   Slot {participant.slot}: {participant.name} (
                   {participant.address.slice(0, 6)}...)
                 </li>
@@ -214,7 +257,7 @@ const DropDetailPage: React.FC = () => {
           {!dropInfo.isCompleted && dropInfo.isActive && (
             <button
               onClick={joinDrop}
-              className="w-full bg-green-500 p-2 rounded mt-4"
+              className="bg-green-500 text-black font-bold py-4 px-6 rounded-md w-full mt-4"
               disabled={
                 !address ||
                 participants.some(
@@ -226,45 +269,24 @@ const DropDetailPage: React.FC = () => {
             </button>
           )}
         </div>
-        <div className="w-full lg:w-3/4 bg-gray-900 p-4 rounded">
-          <h2 className="text-xl mb-2">Drop Details</h2>
-          <p>Host: {dropInfo.host}</p>
-          <p>Entry Fee: {dropInfo.entryFee} ETH</p>
-          <p>Reward: {dropInfo.rewardAmount} ETH</p>
-          <p>
-            Participants: {dropInfo.currentParticipants}/
-            {dropInfo.maxParticipants}
-          </p>
-          <p>
-            Status:{" "}
-            {dropInfo.isCompleted
-              ? "Ended"
-              : dropInfo.isActive
-              ? "Active"
-              : "Inactive"}
-          </p>
-          {dropInfo.isCompleted && dropInfo.winners.length > 0 && (
-            <p>
-              Winners:{" "}
-              {dropInfo.winners
-                .map((w: string) => `${w.slice(0, 6)}...`)
-                .join(", ")}
-            </p>
-          )}
-          <div className="mt-4">
-            <PlinkoBoard
-              rows={rows}
-              numWinners={dropInfo.numWinners}
-              currentParticipants={dropInfo.currentParticipants}
-              maxParticipants={dropInfo.maxParticipants}
-              dropBall={selectWinnersManually}
-              isHost={dropInfo.host.toLowerCase() === address?.toLowerCase()}
-              isManual={dropInfo.isManualSelection}
-              isActive={dropInfo.isActive}
-              isCompleted={dropInfo.isCompleted}
-            />
-          </div>
-        </div>
+      </div>
+      {/* Game Board */}
+      <div className="w-3/4 flex flex-col">
+        <PlinkoBoard
+          rows={rows}
+          numWinners={dropInfo.numWinners}
+          currentParticipants={dropInfo.currentParticipants}
+          maxParticipants={dropInfo.maxParticipants}
+          dropBall={selectWinnersManually}
+          isHost={dropInfo.host.toLowerCase() === address?.toLowerCase()}
+          isManual={dropInfo.isManualSelection}
+          isActive={dropInfo.isActive}
+          isCompleted={dropInfo.isCompleted}
+        />
+        <ParticipantSlots
+          maxParticipants={dropInfo.maxParticipants}
+          currentParticipants={dropInfo.currentParticipants}
+        />
       </div>
     </div>
   );

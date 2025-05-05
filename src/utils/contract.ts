@@ -923,27 +923,41 @@ const CONTRACT_ABI = [
   },
 ];
 
+const alchemyApiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
+
 const publicClient = createPublicClient({
   chain: baseSepolia,
   transport: http(
-    process.env.VITE_ALCHEMY_API_KEY
-      ? `https://base-sepolia.g.alchemy.com/v2/${process.env.VITE_ALCHEMY_API_KEY}`
+    // Use import.meta.env and ensure the key exists
+    alchemyApiKey
+      ? `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`
       : undefined
   ),
 });
 
 export const getContract = async () => {
+  if (!window.ethereum) {
+    console.error("Ethereum provider not found. Ensure MetaMask is installed.");
+    throw new Error("Ethereum provider not found");
+  }
+
   const [account] =
     (await window.ethereum?.request({ method: "eth_requestAccounts" })) || [];
+  if (!account) {
+    console.error("No accounts found. Please connect a wallet.");
+    throw new Error("No accounts found");
+  }
+
   const walletClient = createWalletClient({
-    account: account ? getAddress(account) : undefined,
+    account: getAddress(account),
     chain: baseSepolia,
     transport: custom(window.ethereum),
   });
+
   return {
     publicClient,
     walletClient,
-    address: CONTRACT_ADDRESS,
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
   };
 };

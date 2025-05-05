@@ -12,9 +12,9 @@ import DropDetailPage from "./pages/DropDetailPage";
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen bg-purple-900 text-white">
+      <div className="min-h-screen  text-white">
         <Navbar />
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto">
           <Routes>
             <Route path="/" element={<CreateDropPage />} />
             <Route path="/available" element={<AvailableDropsPage />} />
@@ -22,6 +22,7 @@ const App: React.FC = () => {
             <Route path="/ended" element={<EndedDropsPage />} />
             <Route path="/my-drops" element={<MyDropsPage />} />
             <Route path="/drop/:dropId" element={<DropDetailPage />} />
+            <Route path="*" element={<div>Page Not Found</div>} />
           </Routes>
         </div>
       </div>

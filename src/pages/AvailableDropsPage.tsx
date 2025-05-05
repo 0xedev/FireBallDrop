@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { formatEther } from "viem";
+import { toast } from "react-toastify";
 import DropList from "../components/DropList";
 import { getContract } from "../utils/contract";
 
@@ -21,7 +22,7 @@ const AvailableDropsPage: React.FC = () => {
         const dropCount = (await publicClient.readContract({
           address: contractAddress as `0x${string}`,
           abi,
-          functionName: "getDropCounter",
+          functionName: "dropCounter",
         })) as bigint;
 
         const dropList = [];
@@ -30,7 +31,7 @@ const AvailableDropsPage: React.FC = () => {
             address: contractAddress as `0x${string}`,
             abi,
             functionName: "getDropInfo",
-            args: [i],
+            args: [BigInt(i)],
           })) as any;
 
           if (dropInfo[5] && !dropInfo[6]) {
@@ -52,8 +53,9 @@ const AvailableDropsPage: React.FC = () => {
           }
         }
         setDrops(dropList);
-      } catch (err) {
-        setError("Failed to fetch available drops");
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch available drops");
+        toast.error(err.message || "Failed to fetch available drops");
         console.error("Error fetching available drops:", err);
       } finally {
         setLoading(false);

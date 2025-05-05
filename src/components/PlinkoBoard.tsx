@@ -29,10 +29,10 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   const [currentBall, setCurrentBall] = useState<number>(0);
   const [winnerIndices, setWinnerIndices] = useState<number[]>([]);
 
-  const dotSize = 24;
-  const spacingX = 32;
-  const spacingY = 48;
-  const slotWidth = 40;
+  const dotSize = 8; // Smaller dots like the old UI
+  const spacingX = 48; // Adjusted spacing to match the old UI
+  const spacingY = 24; // Adjusted spacing to match the old UI
+  const slotWidth = 32; // Matches the multiplier box width in the old UI
 
   const generatePath = (rows: number): number[] => {
     const path: number[] = [0];
@@ -101,33 +101,17 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
         dots.push(
           <div
             key={`${row}-${col}`}
-            className="w-6 h-6 bg-white rounded-full mx-1 my-1"
+            className="mx-3 h-2 w-2 bg-white rounded-full" // Matches old UI dot style
           />
         );
       }
       grid.push(
-        <div key={row} className="flex justify-center">
+        <div key={row} className="flex justify-center w-full my-1">
           {dots}
         </div>
       );
     }
     return grid;
-  };
-
-  const renderSlots = () => {
-    const slots = [];
-    const slotCount = Math.min(currentParticipants, maxParticipants);
-    for (let i = 0; i < slotCount; i++) {
-      slots.push(
-        <div
-          key={i}
-          className="w-10 h-10 bg-gray-600 text-white flex items-center justify-center rounded-full mx-1"
-        >
-          {i}
-        </div>
-      );
-    }
-    return <div className="flex justify-center mt-4">{slots}</div>;
   };
 
   const renderBalls = () => {
@@ -153,7 +137,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
       return (
         <animated.div
           key={ballIndex}
-          className="absolute w-6 h-6 bg-yellow-400 rounded-full"
+          className="absolute w-4 h-4 bg-yellow-400 rounded-full plinko-ball" // Slightly larger ball
           style={{
             ...ballStyle,
             top: "0px",
@@ -165,20 +149,21 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   };
 
   return (
-    <div className="relative h-[600px] bg-gray-900 p-4 rounded">
+    <div className="relative h-[600px] bg-gray-900 rounded-md p-4">
+      {" "}
+      {/* Matches old UI container */}
       {isHost && isManual && isActive && !isCompleted && (
         <button
           onClick={handleDrop}
-          className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black px-2 py-1 rounded"
+          className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-black font-bold py-4 px-6 rounded-md w-1/3" // Matches old UI button style
           disabled={isDropping}
         >
-          Drop
+          Drop Ball
         </button>
       )}
       <div className="mt-12 flex flex-col items-center">
         {renderPlinkoGrid()}
         {renderBalls()}
-        {renderSlots()}
       </div>
     </div>
   );

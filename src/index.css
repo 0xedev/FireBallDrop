@@ -46,3 +46,18 @@
     transform: scale(1);
   }
 }
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  } /* Adjust opacity or other properties as desired */
+}
+
+/* Define the utility class to apply the animation */
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; /* Adjust duration (3s) and timing as needed */
+}
