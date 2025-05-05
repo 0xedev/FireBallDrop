@@ -120,7 +120,7 @@ const MyDropsPage: React.FC = () => {
   const indexOfFirstDrop = indexOfLastDrop - itemsPerPage;
   const currentDrops = drops.slice(indexOfFirstDrop, indexOfLastDrop);
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  // const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
   const nextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
