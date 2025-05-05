@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSpring, animated } from "@react-spring/web";
+import ParticipantSlots from "../components/ParticipantSlots";
 
 interface PlinkoBoardProps {
   rows: number;
@@ -27,13 +28,12 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   const [isDropping, setIsDropping] = useState<boolean>(false);
   const [paths, setPaths] = useState<number[][]>([]);
   const [currentBall, setCurrentBall] = useState<number>(0);
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [, setWinnerIndices] = useState<number[]>([]);
+  const [selectedWinners, setSelectedWinners] = useState<number[]>([]);
 
-  const dotSize = 8; // Smaller dots like the old UI
-  const spacingX = 48; // Adjusted spacing to match the old UI
-  const spacingY = 24; // Adjusted spacing to match the old UI
-  const slotWidth = 32; // Matches the multiplier box width in the old UI
+  const dotSize = 6;
+  const spacingX = 40;
+  const spacingY = 20;
+  const slotCount = Math.min(currentParticipants, maxParticipants);
 
   const generatePath = (rows: number): number[] => {
     const path: number[] = [0];
@@ -45,7 +45,6 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
       path.push(position);
     }
 
-    const slotCount = Math.min(currentParticipants, maxParticipants);
     const slot = Math.min(
       Math.max(Math.floor((position + rows) / 2), 0),
       slotCount - 1
@@ -58,19 +57,29 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
     setIsDropping(true);
     setPaths([]);
     setCurrentBall(0);
-    setWinnerIndices([]);
+    setSelectedWinners([]);
 
     try {
       const winners = await dropBall();
-      setWinnerIndices(winners);
-
       const newPaths: number[][] = [];
+      const tempWinners: number[] = [];
+
       for (let i = 0; i < numWinners; i++) {
         const path = generatePath(rows);
-        path[path.length - 1] = winners[i];
+        const landingSlot = path[path.length - 1];
+        tempWinners.push(landingSlot);
         newPaths.push(path);
       }
+
+      setSelectedWinners(tempWinners);
       setPaths(newPaths);
+      winners.forEach((winner, idx) => {
+        if (tempWinners[idx] !== winner) {
+          console.warn(
+            `Mismatch: Expected winner ${winner}, landed in slot ${tempWinners[idx]}`
+          );
+        }
+      });
     } catch (error) {
       console.error("Error dropping ball:", error);
       setIsDropping(false);
@@ -102,7 +111,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
         dots.push(
           <div
             key={`${row}-${col}`}
-            className="mx-3 h-2 w-2 bg-white rounded-full" // Matches old UI dot style
+            className="mx-2 h-2 w-2 bg-gray-300 rounded-full"
           />
         );
       }
@@ -124,8 +133,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
         path.length
       );
       const position = path[row] || 0;
-      const xOffset =
-        position * spacingX - (maxParticipants * slotWidth) / 2 + slotWidth / 2;
+      const xOffset = position * spacingX - (slotCount * 40) / 2 + 20; // Adjusted for slot width
       const yOffset = row * spacingY;
 
       const ballStyle = useSpring({
@@ -138,7 +146,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
       return (
         <animated.div
           key={ballIndex}
-          className="absolute w-4 h-4 bg-yellow-400 rounded-full plinko-ball" // Slightly larger ball
+          className="absolute w-5 h-5 rounded-full bg-gradient-to-b from-yellow-400 to-red-600 shadow-[0_0_10px_2px_rgba(255,165,0,0.8)] animate-pulse"
           style={{
             ...ballStyle,
             top: "0px",
@@ -150,21 +158,24 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   };
 
   return (
-    <div className="relative h-[600px] bg-gray-900 rounded-md p-4">
-      {" "}
-      {/* Matches old UI container */}
+    <div className="relative bg-gray-900 rounded-2xl p-4 shadow-2xl border border-purple-800 h-[calc(100vh-300px)] max-h-[600px] min-h-[400px] overflow-hidden">
       {isHost && isManual && isActive && !isCompleted && (
         <button
           onClick={handleDrop}
-          className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-black font-bold py-4 px-6 rounded-md w-1/3" // Matches old UI button style
+          className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg w-full max-w-xs sm:max-w-sm md:max-w-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isDropping}
         >
           Drop Ball
         </button>
       )}
-      <div className="mt-12 flex flex-col items-center">
+      <div className="mt-12 flex flex-col items-center h-full">
         {renderPlinkoGrid()}
         {renderBalls()}
+        <ParticipantSlots
+          maxParticipants={maxParticipants}
+          currentParticipants={currentParticipants}
+          selectedWinners={selectedWinners}
+        />
       </div>
     </div>
   );

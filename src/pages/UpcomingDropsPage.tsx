@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { formatEther } from "viem";
+import { toast } from "react-toastify";
 import DropList from "../components/DropList";
 import { getContract } from "../utils/contract";
 
@@ -52,8 +53,9 @@ const UpcomingDropsPage: React.FC = () => {
           }
         }
         setDrops(dropList);
-      } catch (err) {
-        setError("Failed to fetch upcoming drops");
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch upcoming drops");
+        toast.error(err.message || "Failed to fetch upcoming drops");
         console.error("Error fetching upcoming drops:", err);
       } finally {
         setLoading(false);
@@ -62,13 +64,101 @@ const UpcomingDropsPage: React.FC = () => {
     fetchDrops();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-
   return (
-    <div>
-      <h1 className="text-2xl mb-4">Upcoming Drops</h1>
-      <DropList drops={drops} />
+    <div className="min-h-screen bg-purple-900 p-6">
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-extrabold mb-2">
+            <span className="text-orange-500">Upcoming</span>{" "}
+            <span className="text-pink-500">Drops</span>
+          </h1>
+          <div className="h-1 w-40 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-300">Stay tuned for these future drops</p>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-red-500 mb-2">
+              Error Loading Drops
+            </h2>
+            <p className="text-gray-300">{error}</p>
+          </div>
+        ) : drops.length === 0 ? (
+          <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 text-purple-500 mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">
+              No Upcoming Drops
+            </h2>
+            <p className="text-gray-300">
+              There are no drops scheduled for the future
+            </p>
+            <button
+              onClick={() => (window.location.href = "/create")}
+              className="mt-4 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg"
+            >
+              Create New Drop
+            </button>
+          </div>
+        ) : (
+          <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800">
+            <div className="flex items-center justify-center mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 text-purple-500 mr-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-white">Coming Soon</h2>
+            </div>
+            <DropList drops={drops} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
