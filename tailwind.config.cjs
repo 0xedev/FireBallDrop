@@ -3,7 +3,7 @@
 module.exports = {
   // or export default for ESM (.js with "type": "module")
   content: [
-    "./index.html", // If you have one at the root
+    "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}", // Include all relevant file types in src
   ],
   theme: {

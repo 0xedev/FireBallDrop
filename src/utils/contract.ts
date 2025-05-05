@@ -1,4 +1,6 @@
-import { ethers } from "ethers";
+import { createPublicClient, http, createWalletClient, custom } from "viem";
+import { baseSepolia } from "viem/chains";
+import { getAddress } from "viem";
 
 const CONTRACT_ADDRESS = "0x68C3A6915E69e28222b79255bEde08a1f3303e84"; // Replace with deployed address
 const CONTRACT_ABI = [
@@ -921,37 +923,27 @@ const CONTRACT_ABI = [
   },
 ];
 
-// Define contract interface type
-interface FireballDrop extends ethers.BaseContract {
-  getDropInfo: (dropId: number) => Promise<
-    [
-      string, // host
-      ethers.BigNumberish, // entryFee
-      ethers.BigNumberish, // rewardAmount
-      number, // maxParticipants
-      number, // currentParticipants
-      boolean, // isActive
-      boolean, // isCompleted
-      boolean, // isPaidEntry
-      boolean, // isManualSelection
-      number, // numWinners
-      string[] // winners
-    ]
-  >;
-  createDrop: (
-    entryFee: ethers.BigNumberish,
-    rewardAmount: ethers.BigNumberish,
-    maxParticipants: number,
-    isPaidEntry: boolean,
-    isManualSelection: boolean,
-    numWinners: number,
-    options?: { value?: ethers.BigNumberish }
-  ) => Promise<ethers.ContractTransaction>;
-}
+const publicClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http(
+    process.env.VITE_ALCHEMY_API_KEY
+      ? `https://base-sepolia.g.alchemy.com/v2/${process.env.VITE_ALCHEMY_API_KEY}`
+      : undefined
+  ),
+});
 
-export const getContract = async (): Promise<ethers.Contract> => {
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  const signer = await provider.getSigner();
-  return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+export const getContract = async () => {
+  const [account] =
+    (await window.ethereum?.request({ method: "eth_requestAccounts" })) || [];
+  const walletClient = createWalletClient({
+    account: account ? getAddress(account) : undefined,
+    chain: baseSepolia,
+    transport: custom(window.ethereum),
+  });
+  return {
+    publicClient,
+    walletClient,
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+  };
 };

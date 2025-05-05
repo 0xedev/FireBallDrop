@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #2a004a, #4a0062);
+}
+
+.plinko-board {
+  position: relative;
+  background: #1a1a2e;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.plinko-slot {
+  transition: background-color 0.3s;
+}
+
+.plinko-slot:hover {
+  background-color: #ff6f61;
+}
+
+.plinko-ball {
+  transition: all 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .plinko-ball {
+    animation: bounce 0.5s ease-out;
+  }
+}
+
+@keyframes bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

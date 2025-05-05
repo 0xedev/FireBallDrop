@@ -1,16 +1,12 @@
 import React, { useState } from "react";
-import { ethers } from "ethers";
 import { useNavigate } from "react-router-dom";
+import { useAccount, useWalletClient } from "wagmi";
+import { parseEther } from "viem";
+import { getContract } from "../utils/contract";
 
-interface CreateDropPageProps {
-  contract: ethers.Contract | null;
-  account: string | null;
-}
-
-const CreateDropPage: React.FC<CreateDropPageProps> = ({
-  contract,
-  account,
-}) => {
+const CreateDropPage: React.FC = () => {
+  const { address } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const [isManual, setIsManual] = useState<boolean>(true);
   const [entryFee, setEntryFee] = useState<number>(0.01);
   const [rewardAmount, setRewardAmount] = useState<number>(0.1);
@@ -19,23 +15,28 @@ const CreateDropPage: React.FC<CreateDropPageProps> = ({
   const navigate = useNavigate();
 
   const createDrop = async () => {
-    if (contract) {
-      try {
-        const tx = await contract.createDrop(
-          ethers.parseEther(entryFee.toString()),
-          ethers.parseEther(rewardAmount.toString()),
+    if (!walletClient || !address) return;
+    const { publicClient, address: contractAddress, abi } = await getContract();
+    try {
+      const hash = await walletClient.writeContract({
+        address: contractAddress as `0x${string}`,
+        abi,
+        functionName: "createDrop",
+        args: [
+          parseEther(entryFee.toString()),
+          parseEther(rewardAmount.toString()),
           maxParticipants,
           !isManual,
           isManual,
           numWinners,
-          { value: isManual ? 0n : ethers.parseEther(rewardAmount.toString()) }
-        );
-        await tx.wait();
-        console.log("Drop created:", tx.hash);
-        navigate("/available");
-      } catch (error) {
-        console.error("Error creating drop:", error);
-      }
+        ],
+        value: isManual ? 0n : parseEther(rewardAmount.toString()),
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+      console.log("Drop created:", hash);
+      navigate("/available");
+    } catch (error) {
+      console.error("Error creating drop:", error);
     }
   };
 
@@ -89,7 +90,7 @@ const CreateDropPage: React.FC<CreateDropPageProps> = ({
         <button
           className="w-full bg-blue-500 p-2 rounded mt-2"
           onClick={createDrop}
-          disabled={!contract || !account}
+          disabled={!address}
         >
           Create Drop
         </button>

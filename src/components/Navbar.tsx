@@ -1,34 +1,23 @@
-import React, { Dispatch, SetStateAction, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { ethers } from "ethers";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { getContract } from "../utils/contract";
 
-interface NavbarProps {
-  contract: ethers.Contract | null;
-  setContract: Dispatch<SetStateAction<ethers.Contract | null>>;
-  account: string | null;
-  setAccount: Dispatch<SetStateAction<string | null>>;
-}
+const Navbar: React.FC = () => {
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const navigate = useNavigate();
 
-const Navbar: React.FC<NavbarProps> = ({
-  contract,
-  setContract,
-  account,
-  setAccount,
-}) => {
-  const connectWallet = async () => {
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      setAccount(address);
-      const contractInstance = await getContract();
-      setContract(contractInstance);
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
-  };
+  useEffect(() => {
+    const setupContract = async () => {
+      if (isConnected) {
+        const contract = await getContract();
+        // Store contract globally if needed (e.g., in context)
+      }
+    };
+    setupContract();
+  }, [isConnected]);
 
   return (
     <nav className="bg-gray-800 p-4 flex justify-between items-center">
@@ -49,14 +38,31 @@ const Navbar: React.FC<NavbarProps> = ({
           My Drops
         </Link>
       </div>
-      <button
-        onClick={connectWallet}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        {account
-          ? `${account.slice(0, 6)}...${account.slice(-4)}`
-          : "Connect Wallet"}
-      </button>
+      <div>
+        {isConnected ? (
+          <button
+            onClick={() => disconnect()}
+            className="bg-red-500 text-white px-4 py-2 rounded mr-2"
+          >
+            Disconnect
+          </button>
+        ) : (
+          connectors.map((connector) => (
+            <button
+              key={connector.id}
+              onClick={() => connect({ connector })}
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              Connect Wallet
+            </button>
+          ))
+        )}
+        {address && (
+          <span className="ml-2">{`${address.slice(0, 6)}...${address.slice(
+            -4
+          )}`}</span>
+        )}
+      </div>
     </nav>
   );
 };

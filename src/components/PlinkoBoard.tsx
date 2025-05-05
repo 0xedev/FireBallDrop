@@ -32,6 +32,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   const dotSize = 24;
   const spacingX = 32;
   const spacingY = 48;
+  const slotWidth = 40;
 
   const generatePath = (rows: number): number[] => {
     const path: number[] = [0];
@@ -43,14 +44,16 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
       path.push(position);
     }
 
-    const finalPosition = Math.floor((position + rows) / 2);
     const slotCount = Math.min(currentParticipants, maxParticipants);
-    const slot = Math.min(Math.max(finalPosition, 0), slotCount - 1);
+    const slot = Math.min(
+      Math.max(Math.floor((position + rows) / 2), 0),
+      slotCount - 1
+    );
     return path.map((p, i) => (i === path.length - 1 ? slot : p));
   };
 
   const handleDrop = async () => {
-    if (isDropping) return;
+    if (isDropping || !isHost || !isManual || !isActive || isCompleted) return;
     setIsDropping(true);
     setPaths([]);
     setCurrentBall(0);
@@ -111,6 +114,22 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
     return grid;
   };
 
+  const renderSlots = () => {
+    const slots = [];
+    const slotCount = Math.min(currentParticipants, maxParticipants);
+    for (let i = 0; i < slotCount; i++) {
+      slots.push(
+        <div
+          key={i}
+          className="w-10 h-10 bg-gray-600 text-white flex items-center justify-center rounded-full mx-1"
+        >
+          {i}
+        </div>
+      );
+    }
+    return <div className="flex justify-center mt-4">{slots}</div>;
+  };
+
   const renderBalls = () => {
     return paths.map((path, ballIndex) => {
       if (ballIndex > currentBall) return null;
@@ -120,8 +139,8 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
         path.length
       );
       const position = path[row] || 0;
-
-      const xOffset = position * spacingX;
+      const xOffset =
+        position * spacingX - (maxParticipants * slotWidth) / 2 + slotWidth / 2;
       const yOffset = row * spacingY;
 
       const ballStyle = useSpring({
@@ -146,7 +165,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   };
 
   return (
-    <div className="relative h-[500px] bg-gray-900 p-4 rounded">
+    <div className="relative h-[600px] bg-gray-900 p-4 rounded">
       {isHost && isManual && isActive && !isCompleted && (
         <button
           onClick={handleDrop}
@@ -159,6 +178,7 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
       <div className="mt-12 flex flex-col items-center">
         {renderPlinkoGrid()}
         {renderBalls()}
+        {renderSlots()}
       </div>
     </div>
   );
