@@ -12,7 +12,7 @@ import DropDetailPage from "./pages/DropDetailPage";
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen  text-white">
+      <div className="min-h-screen bg-slate-900 text-white">
         <Navbar />
         <div className="container mx-auto">
           <Routes>

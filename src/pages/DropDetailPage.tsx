@@ -86,23 +86,27 @@ const DropDetailPage: React.FC = () => {
         address: contractAddress,
         abi,
       } = await getContract();
+
       publicClient.watchContractEvent({
         address: contractAddress as `0x${string}`,
         abi,
         eventName: "ParticipantJoined",
         onLogs: (logs) => {
           logs.forEach((log) => {
-            if (log.args.dropId.toString() === dropId) fetchDropInfo();
+            const typedLog = log as unknown as { args: { dropId: bigint } };
+            if (typedLog.args.dropId.toString() === dropId) fetchDropInfo();
           });
         },
       });
+
       publicClient.watchContractEvent({
         address: contractAddress as `0x${string}`,
         abi,
         eventName: "WinnersSelected",
         onLogs: (logs) => {
           logs.forEach((log) => {
-            if (log.args.dropId.toString() === dropId) fetchDropInfo();
+            const typedLog = log as unknown as { args: { dropId: bigint } };
+            if (typedLog.args.dropId.toString() === dropId) fetchDropInfo();
           });
         },
       });
@@ -113,8 +117,10 @@ const DropDetailPage: React.FC = () => {
   }, [dropId]);
 
   const joinDrop = async () => {
-    if (!walletClient || !address || !dropInfo) {
-      toast.error("Wallet not connected or drop info unavailable");
+    if (!walletClient || !address || !dropInfo || !dropId) {
+      toast.error(
+        "Wallet not connected, drop info unavailable, or drop ID missing"
+      );
       return;
     }
     setLoading(true);
@@ -145,8 +151,10 @@ const DropDetailPage: React.FC = () => {
   };
 
   const selectWinnersManually = async (): Promise<number[]> => {
-    if (!walletClient || !dropInfo) {
-      toast.error("Wallet not connected or drop info unavailable");
+    if (!walletClient || !dropInfo || !dropId) {
+      toast.error(
+        "Wallet not connected, drop info unavailable, or drop ID missing"
+      );
       return [];
     }
     setLoading(true);

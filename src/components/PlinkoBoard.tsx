@@ -27,7 +27,8 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   const [isDropping, setIsDropping] = useState<boolean>(false);
   const [paths, setPaths] = useState<number[][]>([]);
   const [currentBall, setCurrentBall] = useState<number>(0);
-  const [winnerIndices, setWinnerIndices] = useState<number[]>([]);
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [, setWinnerIndices] = useState<number[]>([]);
 
   const dotSize = 8; // Smaller dots like the old UI
   const spacingX = 48; // Adjusted spacing to match the old UI

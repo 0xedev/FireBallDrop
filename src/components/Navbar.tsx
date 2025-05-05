@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { getContract } from "../utils/contract";
+// import { getContract } from "../utils/contract";
 
 const Navbar: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const setupContract = async () => {
       if (isConnected) {
-        const contract = await getContract();
+        // const contract = await getContract();
         // Store contract globally if needed (e.g., in context)
       }
     };
