@@ -939,7 +939,7 @@ const publicClient = createPublicClient({
 export const getContract = async () => {
   if (!window.ethereum) {
     console.error("Ethereum provider not found. Ensure MetaMask is installed.");
-    throw new Error("Ethereum provider not found");
+    throw new Error("Connect to a wallet");
   }
 
   const [account] =
