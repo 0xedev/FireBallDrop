@@ -3,11 +3,14 @@ import { formatEther } from "viem";
 import { toast } from "react-toastify";
 import DropList from "../components/DropList";
 import { getContract } from "../utils/contract";
+import { DropInfo } from "../types/global";
 
 const AvailableDropsPage: React.FC = () => {
-  const [drops, setDrops] = useState<any[]>([]);
+  const [drops, setDrops] = useState<DropInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 7;
 
   useEffect(() => {
     const fetchDrops = async () => {
@@ -25,7 +28,7 @@ const AvailableDropsPage: React.FC = () => {
           functionName: "dropCounter",
         })) as bigint;
 
-        const dropList = [];
+        const dropList: DropInfo[] = [];
         for (let i = 0; i < Number(dropCount); i++) {
           const dropInfo = (await publicClient.readContract({
             address: contractAddress as `0x${string}`,
@@ -35,7 +38,6 @@ const AvailableDropsPage: React.FC = () => {
           })) as any;
 
           if (dropInfo[5] && !dropInfo[6]) {
-            // isActive && !isCompleted
             dropList.push({
               id: i,
               host: dropInfo[0],
@@ -63,6 +65,15 @@ const AvailableDropsPage: React.FC = () => {
     };
     fetchDrops();
   }, []);
+
+  const totalPages = Math.ceil(drops.length / itemsPerPage);
+  const indexOfLastDrop = currentPage * itemsPerPage;
+  const indexOfFirstDrop = indexOfLastDrop - itemsPerPage;
+  const currentDrops = drops.slice(indexOfFirstDrop, indexOfLastDrop);
+
+  const nextPage = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
 
   return (
     <div className="min-h-screen bg-purple-900 p-6">
@@ -136,7 +147,27 @@ const AvailableDropsPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800">
-            <DropList drops={drops} />
+            <DropList drops={currentDrops} />
+            <div className="mt-6 flex justify-between items-center text-white">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span>
+                Page {currentPage} of {totalPages} (Showing{" "}
+                {currentDrops.length} of {drops.length})
+              </span>
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -8,6 +8,8 @@ import UpcomingDropsPage from "./pages/UpcomingDropsPage";
 import EndedDropsPage from "./pages/EndedDropsPage";
 import MyDropsPage from "./pages/MyDropsPage";
 import DropDetailPage from "./pages/DropDetailPage";
+import IntroPage from "./pages/IntroPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 const App: React.FC = () => {
   return (
@@ -16,12 +18,14 @@ const App: React.FC = () => {
         <Navbar />
         <div className="container mx-auto">
           <Routes>
-            <Route path="/" element={<CreateDropPage />} />
+            <Route path="/" element={<IntroPage />} />
+            <Route path="/create" element={<CreateDropPage />} />
             <Route path="/available" element={<AvailableDropsPage />} />
             <Route path="/upcoming" element={<UpcomingDropsPage />} />
             <Route path="/ended" element={<EndedDropsPage />} />
             <Route path="/my-drops" element={<MyDropsPage />} />
             <Route path="/drop/:dropId" element={<DropDetailPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="*" element={<div>Page Not Found</div>} />
           </Routes>
         </div>

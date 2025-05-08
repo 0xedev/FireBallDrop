@@ -13,15 +13,31 @@ interface Participant {
   slot: number;
 }
 
+interface DropInfo {
+  id: number;
+  host: string;
+  entryFee: string;
+  rewardAmount: string;
+  maxParticipants: number;
+  currentParticipants: number;
+  isActive: boolean;
+  isCompleted: boolean;
+  isPaidEntry: boolean;
+  isManualSelection: boolean;
+  numWinners: number;
+  winners: string[];
+}
+
 const DropDetailPage: React.FC = () => {
   const { dropId } = useParams<{ dropId: string }>();
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const [dropInfo, setDropInfo] = useState<any>(null);
+  const [dropInfo, setDropInfo] = useState<DropInfo | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const rows = 16; // Matches old UI
+  const [isCancelled, setIsCancelled] = useState<boolean>(false);
+  const rows = 16;
 
   useEffect(() => {
     const fetchDropInfo = async () => {
@@ -71,6 +87,9 @@ const DropDetailPage: React.FC = () => {
           numWinners: Number(info[9]),
           winners: info[10],
         });
+
+        // Check if drop is cancelled (inactive and not completed)
+        setIsCancelled(!info[5] && !info[6]);
       } catch (err) {
         setError("Failed to fetch drop info");
         toast.error("Failed to fetch drop info");
@@ -107,6 +126,21 @@ const DropDetailPage: React.FC = () => {
           logs.forEach((log) => {
             const typedLog = log as unknown as { args: { dropId: bigint } };
             if (typedLog.args.dropId.toString() === dropId) fetchDropInfo();
+          });
+        },
+      });
+
+      publicClient.watchContractEvent({
+        address: contractAddress as `0x${string}`,
+        abi,
+        eventName: "DropCancelled",
+        onLogs: (logs) => {
+          logs.forEach((log) => {
+            const typedLog = log as unknown as { args: { dropId: bigint } };
+            if (typedLog.args.dropId.toString() === dropId) {
+              setIsCancelled(true);
+              fetchDropInfo();
+            }
           });
         },
       });
@@ -212,6 +246,73 @@ const DropDetailPage: React.FC = () => {
     }
   };
 
+  const cancelDrop = async () => {
+    if (!walletClient || !dropInfo || !dropId) {
+      toast.error(
+        "Wallet not connected, drop info unavailable, or drop ID missing"
+      );
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const {
+        publicClient,
+        address: contractAddress,
+        abi,
+      } = await getContract();
+      const hash = await walletClient.writeContract({
+        address: contractAddress as `0x${string}`,
+        abi,
+        functionName: "cancelDrop",
+        args: [BigInt(dropId)],
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+      toast.success("Drop cancelled successfully");
+      setIsCancelled(true);
+      console.log("Drop cancelled:", hash);
+    } catch (err) {
+      setError("Failed to cancel drop");
+      toast.error("Failed to cancel drop");
+      console.error("Error cancelling drop:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const claimRefund = async () => {
+    if (!walletClient || !dropInfo || !dropId) {
+      toast.error(
+        "Wallet not connected, drop info unavailable, or drop ID missing"
+      );
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const {
+        publicClient,
+        address: contractAddress,
+        abi,
+      } = await getContract();
+      const hash = await walletClient.writeContract({
+        address: contractAddress as `0x${string}`,
+        abi,
+        functionName: "claimRefund",
+        args: [BigInt(dropId)],
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+      toast.success("Refund claimed successfully");
+      console.log("Refund claimed:", hash);
+    } catch (err) {
+      setError("Failed to claim refund");
+      toast.error("Failed to claim refund");
+      console.error("Error claiming refund:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="min-h-screen bg-purple-900 p-6 flex justify-center items-center">
@@ -287,6 +388,11 @@ const DropDetailPage: React.FC = () => {
       </div>
     );
 
+  const isHost = dropInfo.host.toLowerCase() === address?.toLowerCase();
+  const isParticipant = participants.some(
+    (p) => p.address.toLowerCase() === address?.toLowerCase()
+  );
+
   return (
     <div className="min-h-screen bg-purple-900 p-6">
       <div className="w-full max-w-5xl mx-auto">
@@ -300,7 +406,6 @@ const DropDetailPage: React.FC = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Panel */}
           <div className="lg:w-1/3">
             <div className="bg-gray-900 bg-opacity-90 p-6 rounded-2xl shadow-2xl border border-purple-800">
               <h2 className="text-2xl font-bold text-white mb-4">
@@ -325,7 +430,9 @@ const DropDetailPage: React.FC = () => {
                 </p>
                 <p>
                   <span className="font-semibold">Status:</span>{" "}
-                  {dropInfo.isCompleted
+                  {isCancelled
+                    ? "Cancelled"
+                    : dropInfo.isCompleted
                     ? "Ended"
                     : dropInfo.isActive
                     ? "Active"
@@ -356,23 +463,43 @@ const DropDetailPage: React.FC = () => {
                   ))}
                 </ul>
               )}
-              {!dropInfo.isCompleted && dropInfo.isActive && (
-                <button
-                  onClick={joinDrop}
-                  className="mt-6 w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={
-                    !address ||
-                    participants.some(
-                      (p) => p.address.toLowerCase() === address?.toLowerCase()
-                    )
-                  }
-                >
-                  Join Drop
-                </button>
-              )}
+              <div className="mt-6 space-y-3">
+                {!dropInfo.isCompleted && dropInfo.isActive && !isCancelled && (
+                  <button
+                    onClick={joinDrop}
+                    className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={
+                      !address ||
+                      isParticipant ||
+                      dropInfo.currentParticipants >= dropInfo.maxParticipants
+                    }
+                  >
+                    Join Drop
+                  </button>
+                )}
+                {isHost && dropInfo.isActive && !isCancelled && (
+                  <button
+                    onClick={cancelDrop}
+                    className="w-full py-3 px-6 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={dropInfo.isCompleted || !dropInfo.isActive}
+                  >
+                    Cancel Drop
+                  </button>
+                )}
+                {isParticipant &&
+                  isCancelled &&
+                  dropInfo.isPaidEntry &&
+                  !dropInfo.isCompleted && (
+                    <button
+                      onClick={claimRefund}
+                      className="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Claim Refund
+                    </button>
+                  )}
+              </div>
             </div>
           </div>
-          {/* Game Board */}
           <div className="lg:w-2/3 flex flex-col gap-6">
             <div className="bg-gray-900 bg-opacity-90 p-6 rounded-2xl shadow-2xl border border-purple-800">
               <PlinkoBoard
@@ -381,7 +508,7 @@ const DropDetailPage: React.FC = () => {
                 currentParticipants={dropInfo.currentParticipants}
                 maxParticipants={dropInfo.maxParticipants}
                 dropBall={selectWinnersManually}
-                isHost={dropInfo.host.toLowerCase() === address?.toLowerCase()}
+                isHost={isHost}
                 isManual={dropInfo.isManualSelection}
                 isActive={dropInfo.isActive}
                 isCompleted={dropInfo.isCompleted}

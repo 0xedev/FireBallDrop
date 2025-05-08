@@ -11,48 +11,112 @@ const CreateDropPage: React.FC = () => {
   const [selectionType, setSelectionType] = useState<"manual" | "automatic">(
     "manual"
   );
-  const [entryFee, setEntryFee] = useState<number>(0);
-  const [rewardAmount, setRewardAmount] = useState<number>(0);
-  const [maxParticipants, setMaxParticipants] = useState<number>(20);
+  const [isPaidEntry, setIsPaidEntry] = useState<boolean>(false);
+  const [entryFee, setEntryFee] = useState<string>("");
+  const [rewardAmount, setRewardAmount] = useState<string>("");
+  const [maxParticipants, setMaxParticipants] = useState<string>("20");
   const [numWinners, setNumWinners] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const MAX_PARTICIPANTS_LIMIT = 100;
+  const MAX_WINNERS_LIMIT = 3;
 
   useEffect(() => {
-    if (entryFee > 0) {
-      setRewardAmount(entryFee * maxParticipants);
+    if (isPaidEntry && entryFee !== "") {
+      const fee = parseFloat(entryFee);
+      const participants = parseInt(maxParticipants) || 0;
+      if (!isNaN(fee) && participants > 0) {
+        setRewardAmount((fee * participants).toString());
+      } else {
+        setRewardAmount("");
+      }
+    } else {
+      setRewardAmount("");
     }
-  }, [entryFee, maxParticipants]);
+  }, [entryFee, maxParticipants, isPaidEntry]);
+
+  const validateInputs = () => {
+    if (maxParticipants === "") {
+      setErrorMessage("Max participants is required");
+      return false;
+    }
+    const participants = parseInt(maxParticipants);
+    if (participants <= 0 || participants > MAX_PARTICIPANTS_LIMIT) {
+      setErrorMessage(
+        `Max participants must be between 1 and ${MAX_PARTICIPANTS_LIMIT}`
+      );
+      return false;
+    }
+    if (numWinners <= 0 || numWinners > MAX_WINNERS_LIMIT) {
+      setErrorMessage(
+        `Number of winners must be between 1 and ${MAX_WINNERS_LIMIT}`
+      );
+      return false;
+    }
+    if (isPaidEntry) {
+      if (entryFee === "") {
+        setErrorMessage("Entry fee is required for paid entry");
+        return false;
+      }
+      const fee = parseFloat(entryFee);
+      if (fee <= 0) {
+        setErrorMessage("Entry fee must be greater than 0 for paid entry");
+        return false;
+      }
+    } else {
+      if (rewardAmount === "") {
+        setErrorMessage("Reward amount is required for free entry");
+        return false;
+      }
+      const reward = parseFloat(rewardAmount);
+      if (reward <= 0) {
+        setErrorMessage("Reward amount must be greater than 0 for free entry");
+        return false;
+      }
+    }
+    return true;
+  };
 
   const createDrop = async () => {
     if (!walletClient || !address) {
       toast.error("Wallet not connected");
+      setErrorMessage("Wallet not connected");
       return;
     }
+    if (!validateInputs()) {
+      toast.error(errorMessage);
+      return;
+    }
+
     setErrorMessage(null);
-    const { publicClient, address: contractAddress, abi } = await getContract();
     try {
-      if (maxParticipants < numWinners || (entryFee < 0 && rewardAmount <= 0)) {
-        throw new Error(
-          "Invalid parameters: Check participants or reward amount"
-        );
-      }
+      const {
+        publicClient,
+        address: contractAddress,
+        abi,
+      } = await getContract();
+      const fee = isPaidEntry ? parseEther(entryFee) : 0n;
+      const reward = isPaidEntry
+        ? parseEther(
+            (parseFloat(entryFee) * parseInt(maxParticipants)).toString()
+          )
+        : parseEther(rewardAmount);
+      const value = !isPaidEntry && selectionType === "manual" ? reward : 0n;
+
       const hash = await walletClient.writeContract({
         address: contractAddress as `0x${string}`,
         abi,
         functionName: "createDrop",
         args: [
-          parseEther(entryFee.toString()),
-          parseEther(rewardAmount.toString()),
-          maxParticipants,
-          selectionType === "automatic",
+          fee,
+          reward,
+          BigInt(parseInt(maxParticipants)),
+          isPaidEntry,
           selectionType === "manual",
           numWinners,
         ],
-        value:
-          selectionType === "manual" ? 0n : parseEther(rewardAmount.toString()),
+        value,
       });
       await publicClient.waitForTransactionReceipt({ hash });
       toast.success("Drop created successfully");
@@ -70,7 +134,11 @@ const CreateDropPage: React.FC = () => {
 
   const generateWinnerOptions = () => {
     const options = [];
-    for (let i = 1; i <= Math.min(maxParticipants, 10); i++) {
+    const maxWinners = Math.min(
+      parseInt(maxParticipants) || MAX_WINNERS_LIMIT,
+      MAX_WINNERS_LIMIT
+    );
+    for (let i = 1; i <= maxWinners; i++) {
       options.push(
         <option key={i} value={i}>
           {i} Winner{i === 1 ? "" : "s"}
@@ -103,6 +171,24 @@ const CreateDropPage: React.FC = () => {
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-300 text-center mb-2">
+                Entry Type
+              </label>
+              <select
+                value={isPaidEntry ? "paid" : "free"}
+                onChange={(e) => {
+                  setIsPaidEntry(e.target.value === "paid");
+                  setEntryFee("");
+                  setRewardAmount("");
+                }}
+                className="block w-full py-3 px-4 bg-gray-800 text-white border border-purple-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400 transition-colors text-center appearance-none"
+              >
+                <option value="free">Free Entry</option>
+                <option value="paid">Paid Entry</option>
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 text-center mb-2">
                 Winner Selection
               </label>
               <select
@@ -130,9 +216,12 @@ const CreateDropPage: React.FC = () => {
                   type="number"
                   value={maxParticipants}
                   onChange={(e) => {
-                    const value = parseInt(e.target.value) || 1;
-                    setMaxParticipants(Math.min(value, MAX_PARTICIPANTS_LIMIT));
-                    if (numWinners > value) setNumWinners(value);
+                    const value = e.target.value;
+                    setMaxParticipants(value);
+                    const parsedValue = parseInt(value) || MAX_WINNERS_LIMIT;
+                    if (numWinners > Math.min(parsedValue, MAX_WINNERS_LIMIT)) {
+                      setNumWinners(Math.min(parsedValue, MAX_WINNERS_LIMIT));
+                    }
                   }}
                   step="1"
                   min="1"
@@ -150,62 +239,84 @@ const CreateDropPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <label
-                  className="block text-sm font-medium text-gray-300 text-center"
-                  htmlFor="entryFee"
-                >
-                  Entry Fee (ETH)
-                </label>
-                <input
-                  id="entryFee"
-                  type="number"
-                  value={entryFee}
-                  onChange={(e) => setEntryFee(parseFloat(e.target.value) || 0)}
-                  step="0.01"
-                  min="0"
-                  placeholder="e.g., 0.01 or 0 for free"
-                  className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-purple-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400 transition-colors"
-                  aria-describedby="entryFee-description"
-                />
-                <p
-                  id="entryFee-description"
-                  className="text-xs text-gray-400 text-center mt-1"
-                >
-                  Fee per participant (0 for free entry)
-                </p>
-              </div>
+              {isPaidEntry ? (
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-medium text-gray-300 text-center"
+                    htmlFor="entryFee"
+                  >
+                    Entry Fee (ETH)
+                  </label>
+                  <input
+                    id="entryFee"
+                    type="number"
+                    value={entryFee}
+                    onChange={(e) => setEntryFee(e.target.value)}
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g., 0.01"
+                    className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-purple-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400 transition-colors"
+                    aria-describedby="entryFee-description"
+                  />
+                  <p
+                    id="entryFee-description"
+                    className="text-xs text-gray-400 text-center mt-1"
+                  >
+                    Fee per participant
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-medium text-gray-300 text-center"
+                    htmlFor="rewardAmount"
+                  >
+                    Reward Amount (ETH)
+                  </label>
+                  <input
+                    id="rewardAmount"
+                    type="number"
+                    value={rewardAmount}
+                    onChange={(e) => setRewardAmount(e.target.value)}
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g., 0.1"
+                    className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-purple-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400 transition-colors"
+                    aria-describedby="rewardAmount-description"
+                  />
+                  <p
+                    id="rewardAmount-description"
+                    className="text-xs text-gray-400 text-center mt-1"
+                  >
+                    Total reward for winners
+                  </p>
+                </div>
+              )}
 
-              <div className="space-y-2">
-                <label
-                  className="block text-sm font-medium text-gray-300 text-center"
-                  htmlFor="rewardAmount"
-                >
-                  Reward Amount (ETH)
-                </label>
-                <input
-                  id="rewardAmount"
-                  type="number"
-                  value={rewardAmount}
-                  onChange={(e) =>
-                    setRewardAmount(parseFloat(e.target.value) || 0)
-                  }
-                  step="0.01"
-                  min="0"
-                  placeholder={entryFee > 0 ? "Auto-calculated" : "e.g., 0.1"}
-                  className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-purple-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400 transition-colors"
-                  readOnly={entryFee > 0}
-                  aria-describedby="rewardAmount-description"
-                />
-                <p
-                  id="rewardAmount-description"
-                  className="text-xs text-gray-400 text-center mt-1"
-                >
-                  {entryFee > 0
-                    ? "Auto-calculated as entry fee * participants"
-                    : "Manual input for free entry"}
-                </p>
-              </div>
+              {isPaidEntry && (
+                <div className="space-y-2">
+                  <label
+                    className="block text-sm font-medium text-gray-300 text-center"
+                    htmlFor="rewardAmount"
+                  >
+                    Reward Amount (ETH)
+                  </label>
+                  <input
+                    id="rewardAmount"
+                    type="number"
+                    value={rewardAmount}
+                    readOnly
+                    className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-purple-700 rounded-lg"
+                    aria-describedby="rewardAmount-description"
+                  />
+                  <p
+                    id="rewardAmount-description"
+                    className="text-xs text-gray-400 text-center mt-1"
+                  >
+                    Auto-calculated as entry fee * participants
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label
@@ -227,7 +338,7 @@ const CreateDropPage: React.FC = () => {
                   id="numWinners-description"
                   className="text-xs text-gray-400 text-center mt-1"
                 >
-                  Number of winners to select (max: {maxParticipants})
+                  Number of winners to select (max: {MAX_WINNERS_LIMIT})
                 </p>
               </div>
             </div>

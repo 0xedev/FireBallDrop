@@ -54,6 +54,16 @@ const Navbar: React.FC = () => {
                   : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
               }`}
             >
+              Home
+            </Link>
+            <Link
+              to="/create"
+              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+                isActive("/create")
+                  ? "bg-purple-700 text-white shadow-inner"
+                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+              }`}
+            >
               Create Drop
             </Link>
             <Link
@@ -66,7 +76,7 @@ const Navbar: React.FC = () => {
             >
               Available Drops
             </Link>
-            <Link
+            {/* <Link
               to="/upcoming"
               className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
                 isActive("/upcoming")
@@ -75,7 +85,7 @@ const Navbar: React.FC = () => {
               }`}
             >
               Upcoming Drops
-            </Link>
+            </Link> */}
             <Link
               to="/ended"
               className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
@@ -95,6 +105,16 @@ const Navbar: React.FC = () => {
               }`}
             >
               My Drops
+            </Link>
+            <Link
+              to="/leaderboard"
+              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+                isActive("/leaderboard")
+                  ? "bg-purple-700 text-white shadow-inner"
+                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+              }`}
+            >
+              leaderboard
             </Link>
           </div>
 

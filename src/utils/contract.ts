@@ -2,7 +2,9 @@ import { createPublicClient, http, createWalletClient, custom } from "viem";
 import { baseSepolia } from "viem/chains";
 import { getAddress } from "viem";
 
-const CONTRACT_ADDRESS = "0x68C3A6915E69e28222b79255bEde08a1f3303e84"; // Replace with deployed address
+import { formatEther } from "viem";
+
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as `0x${string}`;
 const CONTRACT_ABI = [
   {
     inputs: [
@@ -928,7 +930,6 @@ const alchemyApiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
 const publicClient = createPublicClient({
   chain: baseSepolia,
   transport: http(
-    // Use import.meta.env and ensure the key exists
     alchemyApiKey
       ? `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`
       : undefined
@@ -948,6 +949,11 @@ export const getContract = async () => {
     throw new Error("No accounts found");
   }
 
+  if (!CONTRACT_ADDRESS) {
+    console.error("Contract address not set in environment variables.");
+    throw new Error("Contract address not set");
+  }
+
   const walletClient = createWalletClient({
     account: getAddress(account),
     chain: baseSepolia,
@@ -957,7 +963,86 @@ export const getContract = async () => {
   return {
     publicClient,
     walletClient,
-    address: CONTRACT_ADDRESS as `0x${string}`,
+    address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
   };
 };
+
+export async function getLeaderboard() {
+  const { publicClient, address, abi } = await getContract();
+  const dropCount = (await publicClient.readContract({
+    address: address as `0x${string}`,
+    abi,
+    functionName: "dropCounter",
+  })) as bigint;
+
+  const leaderboardMap: {
+    [key: string]: { wins: number; totalPrize: bigint };
+  } = {};
+  for (let i = 0; i < Number(dropCount); i++) {
+    const [, , , , , , isCompleted, , , numWinners, winners] =
+      (await publicClient.readContract({
+        address: address as `0x${string}`,
+        abi,
+        functionName: "getDropInfo",
+        args: [BigInt(i)],
+      })) as [
+        any,
+        any,
+        any,
+        any,
+        any,
+        any,
+        boolean,
+        any,
+        any,
+        number,
+        (typeof address)[]
+      ];
+
+    if (isCompleted && winners.length > 0) {
+      const [, , rewardAmount] = (await publicClient.readContract({
+        address: address as `0x${string}`,
+        abi,
+        functionName: "getDropInfo",
+        args: [BigInt(i)],
+      })) as [any, any, bigint];
+      const totalPrize = BigInt(rewardAmount.toString());
+      const platformFee = (totalPrize * BigInt(10000)) / BigInt(10000); // Placeholder, adjust if fee logic changes
+      const distributableAmount = totalPrize - platformFee;
+
+      const prizeAmounts = new Array(numWinners).fill(0n);
+      if (numWinners === 1) {
+        prizeAmounts[0] = distributableAmount;
+      } else if (numWinners === 2) {
+        prizeAmounts[0] = (distributableAmount * 60n) / 100n;
+        prizeAmounts[1] = (distributableAmount * 40n) / 100n;
+      } else if (numWinners === 3) {
+        prizeAmounts[0] = (distributableAmount * 50n) / 100n;
+        prizeAmounts[1] = (distributableAmount * 30n) / 100n;
+        prizeAmounts[2] = (distributableAmount * 20n) / 100n;
+      }
+
+      for (let j = 0; j < numWinners; j++) {
+        const winner = winners[j];
+        if (!leaderboardMap[winner]) {
+          leaderboardMap[winner] = { wins: 0, totalPrize: BigInt(0) };
+        }
+        leaderboardMap[winner].wins += 1;
+        leaderboardMap[winner].totalPrize += prizeAmounts[j];
+      }
+    }
+  }
+
+  const leaderboard = Object.entries(leaderboardMap).map(([address, data]) => ({
+    address,
+    wins: data.wins,
+    totalPrize: formatEther(data.totalPrize),
+  }));
+  return leaderboard
+    .sort(
+      (a, b) =>
+        b.wins - a.wins || parseFloat(b.totalPrize) - parseFloat(a.totalPrize)
+    )
+    .slice(0, 10);
+}

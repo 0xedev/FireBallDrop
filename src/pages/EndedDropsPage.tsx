@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { formatEther } from "viem";
+import { toast } from "react-toastify";
 import DropList from "../components/DropList";
 import { getContract } from "../utils/contract";
+import { DropInfo } from "../types/global";
 
 const EndedDropsPage: React.FC = () => {
-  const [drops, setDrops] = useState<any[]>([]);
+  const [drops, setDrops] = useState<DropInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 7;
 
   useEffect(() => {
     const fetchDrops = async () => {
@@ -24,17 +28,16 @@ const EndedDropsPage: React.FC = () => {
           functionName: "dropCounter",
         })) as bigint;
 
-        const dropList = [];
+        const dropList: DropInfo[] = [];
         for (let i = 0; i < Number(dropCount); i++) {
           const dropInfo = (await publicClient.readContract({
             address: contractAddress as `0x${string}`,
             abi,
             functionName: "getDropInfo",
-            args: [i],
+            args: [BigInt(i)],
           })) as any;
 
           if (dropInfo[6]) {
-            // isCompleted
             dropList.push({
               id: i,
               host: dropInfo[0],
@@ -52,8 +55,9 @@ const EndedDropsPage: React.FC = () => {
           }
         }
         setDrops(dropList);
-      } catch (err) {
-        setError("Failed to fetch ended drops");
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch ended drops");
+        toast.error(err.message || "Failed to fetch ended drops");
         console.error("Error fetching ended drops:", err);
       } finally {
         setLoading(false);
@@ -62,17 +66,32 @@ const EndedDropsPage: React.FC = () => {
     fetchDrops();
   }, []);
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-purple-900 p-6 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
-      </div>
-    );
+  const totalPages = Math.ceil(drops.length / itemsPerPage);
+  const indexOfLastDrop = currentPage * itemsPerPage;
+  const indexOfFirstDrop = indexOfLastDrop - itemsPerPage;
+  const currentDrops = drops.slice(indexOfFirstDrop, indexOfLastDrop);
 
-  if (error)
-    return (
-      <div className="min-h-screen bg-purple-900 p-6">
-        <div className="w-full max-w-4xl mx-auto">
+  const nextPage = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+
+  return (
+    <div className="min-h-screen bg-purple-900 p-6">
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-extrabold mb-2">
+            <span className="text-orange-500">Ended</span>{" "}
+            <span className="text-pink-500">Drops</span>
+          </h1>
+          <div className="h-1 w-40 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-300">View all completed Fireball Drops</p>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+          </div>
+        ) : error ? (
           <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
               <svg
@@ -91,27 +110,11 @@ const EndedDropsPage: React.FC = () => {
               </svg>
             </div>
             <h2 className="text-xl font-bold text-red-500 mb-2">
-              Error Loading Ended Drops
+              Error Loading Drops
             </h2>
             <p className="text-gray-300">{error}</p>
           </div>
-        </div>
-      </div>
-    );
-
-  return (
-    <div className="min-h-screen bg-purple-900 p-6">
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-extrabold mb-2">
-            <span className="text-orange-500">Ended</span>{" "}
-            <span className="text-pink-500">Drops</span>
-          </h1>
-          <div className="h-1 w-40 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full mx-auto mb-3"></div>
-          <p className="text-gray-300">View all completed Fireball Drops</p>
-        </div>
-
-        {drops.length === 0 ? (
+        ) : drops.length === 0 ? (
           <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-500 mb-4">
               <svg
@@ -144,7 +147,27 @@ const EndedDropsPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800">
-            <DropList drops={drops} />
+            <DropList drops={currentDrops} />
+            <div className="mt-6 flex justify-between items-center text-white">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span>
+                Page {currentPage} of {totalPages} (Showing{" "}
+                {currentDrops.length} of {drops.length})
+              </span>
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
