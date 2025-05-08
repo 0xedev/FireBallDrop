@@ -4,7 +4,6 @@ import { formatEther } from "viem";
 import { toast } from "react-toastify";
 import { getContract } from "../utils/contract";
 import { DropInfo } from "../types/global";
-import Leaderboard from "../components/Leaderboard";
 
 const IntroPage: React.FC = () => {
   const p5InstanceRef = useRef<any>(null);
@@ -447,10 +446,6 @@ const IntroPage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="mt-6 sm:mt-8">
-          <Leaderboard />
         </div>
       </div>
     </div>
