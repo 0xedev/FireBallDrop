@@ -237,8 +237,8 @@ const DropDetailPage: React.FC = () => {
           : index % dropInfo.currentParticipants;
       });
     } catch (err) {
-      setError("Failed to select winners");
-      toast.error("Failed to select winners");
+      setError("Participants not enough");
+      toast.error("Participants not enough");
       console.error("Error selecting winners:", err);
       throw err;
     } finally {

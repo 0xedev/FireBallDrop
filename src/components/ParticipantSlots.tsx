@@ -3,7 +3,7 @@ import React from "react";
 interface ParticipantSlotsProps {
   maxParticipants: number;
   currentParticipants: number;
-  selectedWinners?: number[]; // Added optional prop for winners
+  selectedWinners?: number[];
 }
 
 const ParticipantSlots: React.FC<ParticipantSlotsProps> = ({
@@ -24,7 +24,8 @@ const ParticipantSlots: React.FC<ParticipantSlotsProps> = ({
     "bg-yellow-200",
   ];
 
-  for (let i = 0; i < maxParticipants; i++) {
+  const maxSlots = Math.min(maxParticipants, 30);
+  for (let i = 0; i < maxSlots; i++) {
     const isActive = i < currentParticipants;
     const isWinner = selectedWinners.includes(i);
     const colorIndex = i % colorScheme.length;
@@ -46,7 +47,14 @@ const ParticipantSlots: React.FC<ParticipantSlotsProps> = ({
     );
   }
 
-  return <div className="flex justify-center mt-4">{slots}</div>;
+  return (
+    <div className="flex justify-center mt-4 overflow-x-auto">
+      <div className="flex flex-col">
+        <div className="flex mb-2">{slots.slice(0, 15)}</div>
+        <div className="flex">{slots.slice(15, 30)}</div>
+      </div>
+    </div>
+  );
 };
 
 export default ParticipantSlots;

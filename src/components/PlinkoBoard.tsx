@@ -28,6 +28,9 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   const [isDropping, setIsDropping] = useState<boolean>(false);
   const [selectedWinners, setSelectedWinners] = useState<number[]>([]);
   const [currentBall, setCurrentBall] = useState<number>(0);
+  const [popUp, setPopUp] = useState<{ message: string; alpha: number } | null>(
+    null
+  );
 
   const dotSize = 6;
   const spacingX = 40;
@@ -38,10 +41,11 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
     setIsDropping(true);
     setSelectedWinners([]);
     setCurrentBall(0);
+    setPopUp(null);
 
     try {
       const winners = await dropBall();
-      setSelectedWinners(winners);
+      setSelectedWinners(winners.slice(0, numWinners)); // Ensure correct number of winners
     } catch (error) {
       console.error("Error dropping ball:", error);
       setIsDropping(false);
@@ -51,6 +55,23 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
   useEffect(() => {
     if (selectedWinners.length === 0 || currentBall >= numWinners) {
       setIsDropping(false);
+      if (currentBall >= numWinners && selectedWinners.length > 0) {
+        setPopUp({
+          message: `Winner${numWinners > 1 ? "s" : ""}: ${selectedWinners
+            .map((w) => `#${w + 1}`)
+            .join(", ")}!`,
+          alpha: 1,
+        });
+        const fadeOut = setInterval(() => {
+          setPopUp((prev) =>
+            prev ? { ...prev, alpha: prev.alpha - 0.02 } : null
+          );
+        }, 50);
+        setTimeout(() => {
+          clearInterval(fadeOut);
+          setPopUp(null);
+        }, 3000);
+      }
       return;
     }
 
@@ -90,14 +111,15 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
       if (ballIndex > currentBall) return null;
 
       const row = Math.min(rows - 1, rows);
-      const xOffset =
-        slot * spacingX - (maxParticipants * spacingX) / 2 + spacingX / 2;
-      const yOffset = row * spacingY;
+      const rowIndex = Math.floor(slot / 15);
+      const colIndex = slot % 15;
+      const xOffset = colIndex * spacingX - (15 * spacingX) / 2 + spacingX / 2;
+      const yOffset = row * spacingY + rowIndex * 40; // Adjust for two rows
 
       const ballStyle = useSpring({
         from: { x: 0, y: 0 },
         to: { x: xOffset, y: yOffset },
-        config: { duration: 300 },
+        config: { duration: 300 * rows },
         reset: true,
       });
 
@@ -134,6 +156,14 @@ const PlinkoBoard: React.FC<PlinkoBoardProps> = ({
           currentParticipants={currentParticipants}
           selectedWinners={selectedWinners}
         />
+        {popUp && (
+          <div
+            className="absolute left-1/2 transform -translate-x-1/2 top-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg animate-pulse"
+            style={{ opacity: popUp.alpha }}
+          >
+            {popUp.message}
+          </div>
+        )}
       </div>
     </div>
   );
