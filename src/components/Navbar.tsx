@@ -32,14 +32,8 @@ const Navbar: React.FC = () => {
           {/* Logo and Brand */}
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              {/* <svg
-                viewBox="0 0 24 24"
-                className="h-10 w-10 text-purple-300 animate-pulse-slow"
-              >
-                <circle cx="12" cy="12" r="10" fill="currentColor" />
-              </svg> */}
               <img
-                src="src/assets/logo.jpg"
+                src="/logo.jpg"
                 alt="Logo"
                 className="h-10 w-10 text-purple-300 animate-pulse-slow"
               />
