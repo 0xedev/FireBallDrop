@@ -194,6 +194,17 @@ const Navbar: React.FC = () => {
               }`}
               onClick={() => setIsMenuOpen(false)}
             >
+              Home
+            </Link>
+            <Link
+              to="/create"
+              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
+                isActive("/create")
+                  ? "bg-purple-700 text-white shadow-inner"
+                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
               Create Drop
             </Link>
             <Link
@@ -207,17 +218,7 @@ const Navbar: React.FC = () => {
             >
               Available Drops
             </Link>
-            <Link
-              to="/upcoming"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/upcoming")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Upcoming Drops
-            </Link>
+
             <Link
               to="/ended"
               className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
@@ -239,6 +240,17 @@ const Navbar: React.FC = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               My Drops
+            </Link>
+            <Link
+              to="/leaderboard"
+              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
+                isActive("/leaderboard")
+                  ? "bg-purple-700 text-white shadow-inner"
+                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              leaderboard
             </Link>
 
             {/* Mobile Wallet Connection */}
