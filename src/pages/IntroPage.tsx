@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { formatEther } from "viem";
 import { toast } from "react-toastify";
 import { getContract } from "../utils/contract";
+import { sdk } from "@farcaster/frame-sdk";
 import { DropInfo } from "../types/global";
 
 const IntroPage: React.FC = () => {
@@ -10,6 +11,7 @@ const IntroPage: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [gameOfTheDay, setGameOfTheDay] = useState<DropInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [welcomeName, setWelcomeName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [popUp, setPopUp] = useState<{
     message: string;
@@ -18,6 +20,29 @@ const IntroPage: React.FC = () => {
     alpha: number;
   } | null>(null);
 
+  useEffect(() => {
+    const fetchUserContext = async () => {
+      try {
+        // Check if running in a Mini App context first
+        const isMiniApp = await sdk.isInMiniApp();
+        if (isMiniApp) {
+          // sdk.context should be populated after sdk.actions.ready() has been called in App.tsx
+          const context = sdk.context;
+          if (context && (await context).user) {
+            const user = (await context).user;
+            // Prefer displayName, fallback to username
+            const nameToDisplay = user.displayName || user.username;
+            if (nameToDisplay) {
+              setWelcomeName(nameToDisplay);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching Farcaster user context:", error);
+      }
+    };
+    fetchUserContext();
+  }, []);
   useEffect(() => {
     const fetchDrops = async () => {
       setLoading(true);
@@ -341,8 +366,13 @@ const IntroPage: React.FC = () => {
             <span className="text-orange-500">Drop</span>
           </h1>
           <div className="h-1 w-40 bg-gradient-to-r from-red-600 to-orange-500 rounded-full mx-auto mb-3"></div>
+          {welcomeName && (
+            <p className="text-xl text-orange-400 mb-2">
+              Welcome, {welcomeName}!
+            </p>
+          )}
           <p className="text-gray-300 text-sm md:text-base">
-            Drop fireballs and win big ETH prizes!
+            Create giveaways and compete for big eth prizes🤑!
           </p>
         </div>
 

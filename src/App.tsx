@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import Navbar from "./components/Navbar";
@@ -12,8 +12,15 @@ import IntroPage from "./pages/IntroPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import SponsorGame from "./pages/SponsorGame";
 import FooterNav from "./components/FooterNav"; // Import the new FooterNav
+import { sdk } from "@farcaster/frame-sdk";
 
 const App: React.FC = () => {
+  useEffect(() => {
+    const initializeMiniApp = async () => {
+      await sdk.actions.ready();
+    };
+    initializeMiniApp();
+  }, []);
   return (
     <Router>
       {/* Use flex flex-col to ensure footer can be positioned correctly if not fixed,
