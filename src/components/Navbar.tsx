@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { sdk } from "@farcaster/frame-sdk";
 
 const Navbar: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -9,13 +10,31 @@ const Navbar: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const setupContract = async () => {
-      if (isConnected) {
-        // Placeholder for contract setup
+    const autoConnectIfMiniApp = async () => {
+      try {
+        const isMiniApp = await sdk.isInMiniApp();
+        if (isMiniApp && !isConnected && connectors.length > 0) {
+          const farcasterConnector = connectors.find(
+            (c) => c.id === "farcasterFrame"
+          );
+
+          if (farcasterConnector) {
+            console.log(
+              "Attempting to auto-connect with Farcaster Frame connector..."
+            );
+            await connect({ connector: farcasterConnector });
+          } else {
+            console.log(
+              "Farcaster Frame connector not found for auto-connect."
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error during Mini App auto-connect:", error);
       }
     };
-    setupContract();
-  }, [isConnected]);
+    autoConnectIfMiniApp();
+  }, [isConnected, connect, connectors]); // Rerun if connection state or connectors change
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -97,7 +116,7 @@ const Navbar: React.FC = () => {
                   : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
-              My Drops
+              Profile
             </Link>
             <Link
               to="/leaderboard"

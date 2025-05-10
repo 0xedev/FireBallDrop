@@ -3,6 +3,7 @@ import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 import DropList from "../components/DropList";
 import { getContract } from "../utils/contract";
+import { sdk } from "@farcaster/frame-sdk";
 
 const MyDropsPage: React.FC = () => {
   const { address } = useAccount();
@@ -11,6 +12,10 @@ const MyDropsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 7;
+  const [farcasterUser, setFarcasterUser] = useState<{
+    name: string | null;
+    pfpUrl: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const fetchDrops = async () => {
@@ -78,6 +83,28 @@ const MyDropsPage: React.FC = () => {
     fetchDrops();
   }, [address]);
 
+  useEffect(() => {
+    const fetchFarcasterUser = async () => {
+      try {
+        const isMiniApp = await sdk.isInMiniApp();
+        if (isMiniApp) {
+          const context = await sdk.context;
+          if (context && context.user) {
+            const user = context.user;
+            const nameToDisplay = user.displayName || user.username || "User";
+            setFarcasterUser({
+              name: nameToDisplay,
+              pfpUrl: user.pfpUrl || null,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching Farcaster user for MyDropsPage:", err);
+      }
+    };
+    fetchFarcasterUser();
+  }, []);
+
   if (loading)
     return (
       <div className="min-h-screen bg-gray-900 p-6 flex justify-center items-center">
@@ -127,12 +154,29 @@ const MyDropsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="w-full max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-extrabold mb-2">
-            <span className="text-red-600">My</span>{" "}
-            <span className="text-orange-500">Drops</span>
-          </h1>
-          <div className="h-1 w-40 bg-gradient-to-r from-red-600 to-orange-500 rounded-full mx-auto mb-3"></div>
+        <div className="text-center mb-10">
+          {farcasterUser && (
+            <div className="flex flex-col items-center mb-4">
+              {farcasterUser.pfpUrl && (
+                <img
+                  src={farcasterUser.pfpUrl}
+                  alt={`${farcasterUser.name}'s profile picture`}
+                  className="w-20 h-20 rounded-full border-2 border-orange-500 shadow-lg mb-2"
+                />
+              )}
+              <h1 className="text-4xl md:text-5xl font-extrabold">
+                <span className="text-red-600">{farcasterUser.name}'s</span>{" "}
+                <span className="text-orange-500">Drops</span>
+              </h1>
+            </div>
+          )}
+          {!farcasterUser && (
+            <h1 className="text-5xl font-extrabold mb-2">
+              <span className="text-red-600">My</span>{" "}
+              <span className="text-orange-500">Drops</span>
+            </h1>
+          )}
+          <div className="h-1 w-48 bg-gradient-to-r from-red-600 to-orange-500 rounded-full mx-auto mb-3"></div>
           <p className="text-gray-100">View drops you host or participate in</p>
         </div>
 

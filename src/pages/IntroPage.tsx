@@ -29,7 +29,8 @@ const IntroPage: React.FC = () => {
           // sdk.context should be populated after sdk.actions.ready() has been called in App.tsx
           const context = sdk.context;
           if (context && (await context).user) {
-            const user = (await context).user;
+            // Corrected: sdk.context.user is not a promise
+            const user = (await context).user; // Corrected
             // Prefer displayName, fallback to username
             const nameToDisplay = user.displayName || user.username;
             if (nameToDisplay) {

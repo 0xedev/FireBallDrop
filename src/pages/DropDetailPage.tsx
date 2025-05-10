@@ -5,6 +5,7 @@ import { parseEther, formatEther } from "viem";
 import { toast } from "react-toastify";
 import PlinkoBoard from "../components/PlinkoBoard";
 // import ParticipantSlots from "../components/ParticipantSlots";
+import { sdk } from "@farcaster/frame-sdk";
 import { getContract } from "../utils/contract";
 
 interface Participant {
@@ -178,6 +179,51 @@ const DropDetailPage: React.FC = () => {
     setupEventListeners();
   }, [dropId]);
 
+  // Effect to dynamically update fc:frame meta tag for sharing this specific drop
+  useEffect(() => {
+    if (dropInfo && dropId) {
+      const metaTagContent = JSON.stringify({
+        version: "next",
+        imageUrl: "https://fireball-rho.vercel.app/image.png", // Consider a drop-specific image if available
+        button: {
+          title: `View Drop #${dropId} - ${dropInfo.rewardAmount} ETH Prize!`,
+          action: {
+            type: "launch_frame",
+            url: `https://fireball-rho.vercel.app/drop/${dropId}`,
+            name: "Fireball☄️", // Your app's name from farcaster.json
+            splashImageUrl: "https://fireball-rho.vercel.app/logo.jpg", // from farcaster.json
+            splashBackgroundColor: "#1f2937", // from farcaster.json
+          },
+        },
+      });
+
+      let metaTag = document.querySelector('meta[name="fc:frame"]');
+      if (metaTag) {
+        metaTag.setAttribute("content", metaTagContent);
+      } else {
+        metaTag = document.createElement("meta");
+        metaTag.setAttribute("name", "fc:frame");
+        metaTag.setAttribute("content", metaTagContent);
+        document.head.appendChild(metaTag);
+      }
+
+      // Cleanup: Revert to default meta tag from index.html when component unmounts
+      // This is important for SPAs to ensure subsequent page views aren't affected
+      // if they don't set their own fc:frame tags.
+      return () => {
+        const defaultFcFrame = document.querySelector(
+          'meta[name="fc:frame-default-for-spa"]'
+        );
+        if (defaultFcFrame && metaTag) {
+          metaTag.setAttribute(
+            "content",
+            defaultFcFrame.getAttribute("content") || ""
+          );
+        }
+      };
+    }
+  }, [dropId, dropInfo]);
+
   const joinDrop = async () => {
     if (!walletClient || !address || !dropInfo || !dropId) {
       toast.error(
@@ -342,6 +388,24 @@ const DropDetailPage: React.FC = () => {
       console.error("Error claiming refund:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShareDrop = async () => {
+    if (!dropInfo || !dropId) return;
+
+    const shareText = `Check out my Fireball Drop #${dropId}!\nPrize: ${dropInfo.rewardAmount} ETH.\nJoin here:`;
+    // The URL of the current drop detail page
+    const shareUrl = `https://fireball-rho.vercel.app/drop/${dropId}`;
+
+    try {
+      await sdk.actions.composeCast({
+        text: shareText,
+        embeds: [shareUrl],
+      });
+    } catch (error) {
+      console.error("Failed to compose cast for sharing drop:", error);
+      toast.error("Could not open Farcaster composer to share.");
     }
   };
 
@@ -518,6 +582,17 @@ const DropDetailPage: React.FC = () => {
                     Cancel Drop
                   </button>
                 )}
+                {isHost &&
+                  dropInfo.isActive &&
+                  !dropInfo.isCompleted &&
+                  !isCancelled && (
+                    <button
+                      onClick={handleShareDrop}
+                      className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg mt-3"
+                    >
+                      Share this Drop
+                    </button>
+                  )}
                 {isParticipant &&
                   isCancelled &&
                   dropInfo.isPaidEntry &&
