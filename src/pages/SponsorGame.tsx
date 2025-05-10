@@ -1,36 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount, useWalletClient } from "wagmi";
 import { parseEther } from "viem";
 import { toast } from "react-toastify";
 import { getContract } from "../utils/contract";
 
-const CreateGame: React.FC = () => {
+const SponsorGame: React.FC = () => {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [selectionType, setSelectionType] = useState<"manual" | "automatic">(
     "manual"
   );
-  const [entryFee, setEntryFee] = useState<string>("");
+  const [rewardAmount, setRewardAmount] = useState<string>("");
   const [maxParticipants, setMaxParticipants] = useState<string>("20");
   const [numWinners, setNumWinners] = useState<number>(1);
+  const [isPaidEntry, setIsPaidEntry] = useState<boolean>(false); // Add paid-entry toggle
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const MAX_PARTICIPANTS_LIMIT = 30;
   const MAX_WINNERS_LIMIT = 3;
-
-  useEffect(() => {
-    const fee = parseFloat(entryFee);
-    const participants = parseInt(maxParticipants) || 0;
-    if (!isNaN(fee) && participants > 0) {
-      setRewardAmount((fee * participants).toString());
-    } else {
-      setRewardAmount("");
-    }
-  }, [entryFee, maxParticipants]);
-
-  const [rewardAmount, setRewardAmount] = useState<string>("");
 
   const validateInputs = () => {
     if (maxParticipants === "") {
@@ -50,14 +39,16 @@ const CreateGame: React.FC = () => {
       );
       return false;
     }
-    if (entryFee === "") {
-      setErrorMessage("Entry fee is required");
+    if (!isPaidEntry && rewardAmount === "") {
+      setErrorMessage("Reward amount is required for host-funded drops");
       return false;
     }
-    const fee = parseFloat(entryFee);
-    if (fee <= 0) {
-      setErrorMessage("Entry fee must be greater than 0");
-      return false;
+    if (!isPaidEntry) {
+      const reward = parseFloat(rewardAmount);
+      if (reward <= 0) {
+        setErrorMessage("Reward amount must be greater than 0");
+        return false;
+      }
     }
     return true;
   };
@@ -80,11 +71,11 @@ const CreateGame: React.FC = () => {
         address: contractAddress,
         abi,
       } = await getContract();
-      const fee = parseEther(entryFee);
-      const reward = parseEther(
-        (parseFloat(entryFee) * parseInt(maxParticipants)).toString()
-      );
-      const value = 0n;
+      const fee = isPaidEntry ? parseEther("0.01") : 0n; // Example entry fee for paid drops
+      const reward = isPaidEntry
+        ? fee * BigInt(parseInt(maxParticipants))
+        : parseEther(rewardAmount);
+      const value = isPaidEntry ? 0n : reward; // Send rewardAmount for host-funded, 0 for paid-entry
 
       const hash = await walletClient.writeContract({
         address: contractAddress as `0x${string}`,
@@ -94,23 +85,23 @@ const CreateGame: React.FC = () => {
           fee,
           reward,
           BigInt(parseInt(maxParticipants)),
-          true,
+          isPaidEntry,
           selectionType === "manual",
           numWinners,
         ],
         value,
       });
       await publicClient.waitForTransactionReceipt({ hash });
-      toast.success("Game created successfully");
-      console.log("Game created:", hash);
+      toast.success("Game sponsored successfully");
+      console.log("Game sponsored:", hash);
       navigate("/available");
     } catch (error: any) {
       const message = error.message.includes("insufficient funds")
         ? "Insufficient funds for transaction"
-        : error.message || "Error creating game";
+        : error.message || "Error sponsoring game";
       setErrorMessage(message);
       toast.error(message);
-      console.error("Error creating game:", error);
+      console.error("Error sponsoring game:", error);
     }
   };
 
@@ -135,12 +126,12 @@ const CreateGame: React.FC = () => {
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-extrabold mb-2">
-            <span className="text-red-600">Create</span>{" "}
+            <span className="text-red-600">Sponsor</span>{" "}
             <span className="text-orange-500">Game</span>
           </h1>
           <div className="h-1 w-40 bg-gradient-to-r from-red-600 to-orange-500 rounded-full mx-auto mb-3"></div>
           <p className="text-gray-100 text-center">
-            Set your parameters and launch your paid game
+            Set your parameters and sponsor your game
           </p>
         </div>
 
@@ -149,6 +140,20 @@ const CreateGame: React.FC = () => {
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Game Settings
             </h2>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-100 text-center mb-2">
+                Game Type
+              </label>
+              <select
+                value={isPaidEntry ? "paid" : "free"}
+                onChange={(e) => setIsPaidEntry(e.target.value === "paid")}
+                className="block w-full py-3 px-4 bg-gray-800 text-white border border-orange-500 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-yellow-400 transition-colors text-center appearance-none"
+              >
+                <option value="free">Host-Funded (Free Entry)</option>
+                <option value="paid">Participant-Paid Entry</option>
+              </select>
+            </div>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-100 text-center mb-2">
@@ -205,49 +210,28 @@ const CreateGame: React.FC = () => {
               <div className="space-y-2">
                 <label
                   className="block text-sm font-medium text-gray-100 text-center"
-                  htmlFor="entryFee"
-                >
-                  Entry Fee (ETH)
-                </label>
-                <input
-                  id="entryFee"
-                  type="number"
-                  value={entryFee}
-                  onChange={(e) => setEntryFee(e.target.value)}
-                  step="0.01"
-                  min="0"
-                  placeholder="e.g., 0.01"
-                  className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-orange-500 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-yellow-400 transition-colors"
-                  aria-describedby="entryFee-description"
-                />
-                <p
-                  id="entryFee-description"
-                  className="text-xs text-gray-300 text-center mt-1"
-                >
-                  Fee per participant
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  className="block text-sm font-medium text-gray-100 text-center"
                   htmlFor="rewardAmount"
                 >
-                  Reward Amount (ETH)
+                  {isPaidEntry ? "Entry Fee (ETH)" : "Reward Amount (ETH)"}
                 </label>
                 <input
                   id="rewardAmount"
                   type="number"
                   value={rewardAmount}
-                  readOnly
-                  className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-orange-500 rounded-lg"
+                  onChange={(e) => setRewardAmount(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  placeholder={isPaidEntry ? "e.g., 0.01" : "e.g., 0.1"}
+                  className="block w-full py-3 px-4 text-center bg-gray-800 text-white border border-orange-500 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 hover:border-yellow-400 transition-colors"
                   aria-describedby="rewardAmount-description"
                 />
                 <p
                   id="rewardAmount-description"
                   className="text-xs text-gray-300 text-center mt-1"
                 >
-                  Auto-calculated as entry fee * participants
+                  {isPaidEntry
+                    ? "Fee per participant"
+                    : "Total reward for winners"}
                 </p>
               </div>
 
@@ -290,15 +274,15 @@ const CreateGame: React.FC = () => {
               <button
                 onClick={createDrop}
                 className="py-3 px-6 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg w-40 text-center"
-                aria-label="Create Game"
+                aria-label="Sponsor Game"
               >
-                Create Game
+                Sponsor Game
               </button>
             </div>
 
             <div className="mt-8 pt-4 border-t border-gray-700 text-center text-xs text-gray-300">
-              Your games will appear in the "Available Drops" section once
-              created
+              Your sponsored games will appear in the "Available Drops" section
+              once created
             </div>
           </div>
         </div>
@@ -307,4 +291,4 @@ const CreateGame: React.FC = () => {
   );
 };
 
-export default CreateGame;
+export default SponsorGame;

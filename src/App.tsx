@@ -10,16 +10,24 @@ import MyDropsPage from "./pages/MyDropsPage";
 import DropDetailPage from "./pages/DropDetailPage";
 import IntroPage from "./pages/IntroPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import SponsorGame from "./pages/SponsorGame";
+import FooterNav from "./components/FooterNav"; // Import the new FooterNav
 
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-900 text-white">
+      {/* Use flex flex-col to ensure footer can be positioned correctly if not fixed,
+          or to manage overall page structure if main content needs to shrink.
+          For a fixed footer, this mainly helps keep structure clean. */}
+      <div className="flex flex-col min-h-screen bg-slate-900 text-white">
         <Navbar />
-        <div className="container mx-auto">
+        {/* flex-grow allows this main content area to take up available space */}
+        {/* pb-20 md:pb-4 adds padding at the bottom for the fixed footer on mobile */}
+        <main className="flex-grow container mx-auto px-4 py-6 md:py-8 pb-20 md:pb-8">
           <Routes>
             <Route path="/" element={<IntroPage />} />
             <Route path="/create" element={<CreateDropPage />} />
+            <Route path="/sponsor" element={<SponsorGame />} />
             <Route path="/available" element={<AvailableDropsPage />} />
             <Route path="/upcoming" element={<UpcomingDropsPage />} />
             <Route path="/ended" element={<EndedDropsPage />} />
@@ -28,7 +36,8 @@ const App: React.FC = () => {
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="*" element={<div>Page Not Found</div>} />
           </Routes>
-        </div>
+        </main>
+        <FooterNav /> {/* Add the FooterNav component here */}
       </div>
     </Router>
   );

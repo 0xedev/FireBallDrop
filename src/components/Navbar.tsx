@@ -1,295 +1,162 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-// import { getContract } from "../utils/contract";
 
 const Navbar: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  // const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const setupContract = async () => {
       if (isConnected) {
-        // const contract = await getContract();
-        // Store contract globally if needed (e.g., in context)
+        // Placeholder for contract setup
       }
     };
     setupContract();
   }, [isConnected]);
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-800 shadow-2xl">
+    <nav className="bg-gray-900 border-b border-gray-700 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20 items-center">
+        <div className="flex justify-between h-16 items-center">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <img
                 src="/logo.jpg"
                 alt="Logo"
-                className="h-10 w-10 text-purple-300 animate-pulse-slow"
+                className="h-8 w-8 text-orange-400 animate-pulse"
               />
             </div>
-            <span className="text-2xl font-extrabold text-white tracking-tight drop-shadow-md">
+            <span className="text-xl font-bold text-white tracking-wide">
               FireBall
             </span>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-1">
             <Link
               to="/"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                 isActive("/")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
               Home
             </Link>
             <Link
               to="/create"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                 isActive("/create")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
-              Create Drop
+              Create
+            </Link>
+            <Link
+              to="/sponsor"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                isActive("/sponsor")
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
+              }`}
+            >
+              Sponsor
             </Link>
             <Link
               to="/available"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                 isActive("/available")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
-              Available Drops
+              Available
             </Link>
-            {/* <Link
-              to="/upcoming"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
-                isActive("/upcoming")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-            >
-              Upcoming Drops
-            </Link> */}
             <Link
               to="/ended"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                 isActive("/ended")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
-              Ended Drops
+              Ended
             </Link>
             <Link
               to="/my-drops"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                 isActive("/my-drops")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
               My Drops
             </Link>
             <Link
               to="/leaderboard"
-              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                 isActive("/leaderboard")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-orange-400"
               }`}
             >
-              leaderboard
+              Leaderboard
             </Link>
           </div>
 
-          {/* Wallet Connection */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Wallet Connection (Desktop & Mobile) */}
+          <div className="flex items-center">
             {isConnected ? (
-              <div className="flex items-center space-x-3">
-                <span className="bg-purple-800 px-4 py-2 rounded-xl text-sm font-medium text-purple-100 shadow-md">
-                  {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
-                </span>
-                <button
-                  onClick={() => disconnect()}
-                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  Disconnect
-                </button>
-              </div>
-            ) : (
-              <div>
-                {connectors.map((connector) => (
-                  <button
-                    key={connector.id}
-                    onClick={() => connect({ connector })}
-                    className="bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    Connect Wallet
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-full text-gray-300 hover:text-white hover:bg-purple-700 focus:outline-none transition-all duration-300"
-            >
-              <svg
-                className="h-8 w-8"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                {isMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-4 space-y-1 bg-purple-900 bg-opacity-95 backdrop-blur-md rounded-b-lg shadow-lg">
-            <Link
-              to="/"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/create"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/create")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Create Drop
-            </Link>
-            <Link
-              to="/available"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/available")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Available Drops
-            </Link>
-
-            <Link
-              to="/ended"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/ended")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Ended Drops
-            </Link>
-            <Link
-              to="/my-drops"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/my-drops")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              My Drops
-            </Link>
-            <Link
-              to="/leaderboard"
-              className={`block px-4 py-2.5 rounded-md text-lg font-medium ${
-                isActive("/leaderboard")
-                  ? "bg-purple-700 text-white shadow-inner"
-                  : "text-gray-300 hover:bg-purple-700 hover:text-white hover:shadow-md"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              leaderboard
-            </Link>
-
-            {/* Mobile Wallet Connection */}
-            <div className="pt-4 pb-3 border-t border-purple-800">
-              {isConnected ? (
-                <div className="flex flex-col space-y-3">
-                  <span className="bg-purple-800 px-4 py-2 rounded-xl text-sm font-medium text-purple-100 shadow-md w-fit mx-auto">
+              <>
+                {/* Desktop View: Address + Separate Disconnect Button */}
+                <div className="hidden md:flex items-center space-x-2">
+                  <span className="bg-gray-700 px-3 py-1 rounded-full text-sm font-medium text-gray-200">
                     {`${address?.slice(0, 6)}...${address?.slice(-4)}`}
                   </span>
                   <button
-                    onClick={() => {
-                      disconnect();
-                      setIsMenuOpen(false);
-                    }}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-xl text-sm font-medium w-full hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-md"
+                    onClick={() => disconnect()}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200"
                   >
                     Disconnect
                   </button>
                 </div>
-              ) : (
-                <div>
-                  {connectors.map((connector) => (
-                    <button
-                      key={connector.id}
-                      onClick={() => {
-                        connect({ connector });
-                        setIsMenuOpen(false);
-                      }}
-                      className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-4 py-2 rounded-xl text-sm font-medium w-full hover:from-blue-700 hover:to-purple-800 transition-all duration-300 shadow-md"
-                    >
-                      Connect Wallet
-                    </button>
-                  ))}
+
+                {/* Mobile View: Single Button with Address, acts as Disconnect */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => disconnect()}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 whitespace-nowrap"
+                  >
+                    {`${address?.slice(0, 4)}...${address?.slice(-3)}`}{" "}
+                    {/* Shorter for mobile button */}
+                  </button>
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div>
+                {/* Only render a button if there's at least one connector */}
+                {/* This will now render a single "Connect Wallet" button that uses the first available connector */}
+                {connectors.length > 0 && (
+                  <button
+                    key={connectors[0].id} // Use the first connector
+                    onClick={() => connect({ connector: connectors[0] })} // Connect with the first connector
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 whitespace-nowrap"
+                  >
+                    Connect Wallet
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 };

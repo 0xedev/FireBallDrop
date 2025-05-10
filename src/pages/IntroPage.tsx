@@ -8,7 +8,7 @@ import { DropInfo } from "../types/global";
 const IntroPage: React.FC = () => {
   const p5InstanceRef = useRef<any>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [largestPots, setLargestPots] = useState<DropInfo[]>([]);
+  const [gameOfTheDay, setGameOfTheDay] = useState<DropInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [popUp, setPopUp] = useState<{
@@ -62,12 +62,10 @@ const IntroPage: React.FC = () => {
         }
 
         if (dropList.length > 0) {
-          const sortedDrops = dropList
-            .sort(
-              (a, b) => parseFloat(b.rewardAmount) - parseFloat(a.rewardAmount)
-            )
-            .slice(0, 3);
-          setLargestPots(sortedDrops);
+          const sortedDrops = dropList.sort(
+            (a, b) => parseFloat(b.rewardAmount) - parseFloat(a.rewardAmount)
+          );
+          setGameOfTheDay(sortedDrops[0]);
         }
       } catch (err: any) {
         setError(err.message || "Failed to fetch drops");
@@ -86,17 +84,13 @@ const IntroPage: React.FC = () => {
     script.async = true;
     script.onload = () => {
       const p5 = (window as any).p5;
-      // Wrap sketch logic in a factory to properly capture canvasRef and its dimensions
       const sketchFactory = (p: any) => {
         let canvasWidth: number;
         let canvasHeight: number;
-
-        // Original design dimensions for scaling reference
         const baseCanvasWidth = 600;
         const baseCanvasHeight = 400;
         let scaleFactor = 1;
 
-        // Game elements
         let pegs: { x: number; y: number }[] = [];
         let balls: {
           landed: boolean;
@@ -127,10 +121,7 @@ const IntroPage: React.FC = () => {
         const setupElements = () => {
           pegs = [];
           slots = [];
-
-          // Scaled values
-          // const ballRadius = 8 * scaleFactor; // Collision radius handled separately
-          const sketchRows = 10; // Renamed from 'rows' to avoid p5 global conflicts
+          const sketchRows = 10;
           const maxCols = 6;
           const spacingX = 50 * scaleFactor;
           const spacingY = 40 * scaleFactor;
@@ -139,7 +130,6 @@ const IntroPage: React.FC = () => {
 
           let currentCols = 1;
           let increasing = true;
-          // Pegs setup
           for (let i = 0; i < sketchRows; i++) {
             for (let j = 0; j < currentCols; j++) {
               const x =
@@ -166,7 +156,6 @@ const IntroPage: React.FC = () => {
         const calculateDimensionsAndSetup = () => {
           if (canvasRef.current) {
             canvasWidth = canvasRef.current.offsetWidth;
-            // Maintain aspect ratio of original baseCanvasWidth x baseCanvasHeight
             canvasHeight = canvasWidth * (baseCanvasHeight / baseCanvasWidth);
             scaleFactor = canvasWidth / baseCanvasWidth;
             setupElements();
@@ -184,7 +173,7 @@ const IntroPage: React.FC = () => {
         };
 
         p.draw = () => {
-          p.background(75, 0, 130);
+          p.background(20, 20, 20);
           const pegDrawRadius = 5 * scaleFactor;
           p.fill(255, 165, 0);
           p.noStroke();
@@ -202,7 +191,7 @@ const IntroPage: React.FC = () => {
             );
             p.fill(255);
             p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(Math.max(8, 12 * scaleFactor)); // Ensure text is not too small
+            p.textSize(Math.max(8, 12 * scaleFactor));
             p.text(
               slot.label,
               slot.x + slot.width / 2,
@@ -231,11 +220,7 @@ const IntroPage: React.FC = () => {
             ball.x += ball.vx;
 
             if (ball.vy > 0) {
-              ball.particles.push({
-                x: ball.x,
-                y: ball.y,
-                alpha: 1,
-              });
+              ball.particles.push({ x: ball.x, y: ball.y, alpha: 1 });
             }
 
             const ballCollisionRadius = 8 * scaleFactor;
@@ -258,7 +243,6 @@ const IntroPage: React.FC = () => {
               canvasHeight - slotCollisionHeight - ballCollisionRadius
             ) {
               ball.y = canvasHeight - slotCollisionHeight - ballCollisionRadius;
-
               ball.vy = 0;
               ball.vx *= 0.9;
               if (Math.abs(ball.vx) < 0.1 && !ball.landed) {
@@ -324,7 +308,7 @@ const IntroPage: React.FC = () => {
       };
 
       if (canvasRef.current) {
-        canvasRef.current.innerHTML = ""; // Clear previous canvas if any
+        canvasRef.current.innerHTML = "";
         p5InstanceRef.current = new p5(sketchFactory, canvasRef.current);
       }
     };
@@ -333,9 +317,8 @@ const IntroPage: React.FC = () => {
     return () => {
       if (p5InstanceRef.current) {
         p5InstanceRef.current.remove();
-        p5InstanceRef.current = null; // Clear the ref
+        p5InstanceRef.current = null;
       }
-      // Ensure the script is still a child of document.body before removing
       if (script.parentNode === document.body) {
         document.body.removeChild(script);
       }
@@ -349,38 +332,114 @@ const IntroPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-purple-900 p-4 md:p-6">
-      <div className="w-full max-w-full md:max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-2">
-            <span className="text-orange-500">Fireball</span>{" "}
-            <span className="text-pink-500">Drop</span>
+    <div className="min-h-screen flex flex-col items-center bg-gray-900 p-4 md:p-6">
+      <div className="w-full max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-2">
+            <span className="text-red-600">Fireball</span>{" "}
+            <span className="text-orange-500">Drop</span>
           </h1>
-          <div className="h-1 w-40 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full mx-auto mb-3"></div>
-          <p className="text-gray-300 text-center text-sm sm:text-base">
-            Drop fireballs and compete for big ETH prizes!
+          <div className="h-1 w-40 bg-gradient-to-r from-red-600 to-orange-500 rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-300 text-sm md:text-base">
+            Drop fireballs and win big ETH prizes!
           </p>
         </div>
 
-        <div className="bg-gray-900 bg-opacity-90 p-4 md:p-8 rounded-2xl shadow-2xl border border-purple-800 mb-8">
+        {/* Game of the Day Section */}
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 text-center">
+            🔥 Game of the Day 🔥
+          </h2>
+          {loading ? (
+            <div className="flex justify-center items-center py-6">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center text-red-400 text-sm md:text-base">
+              {error}
+            </div>
+          ) : gameOfTheDay ? (
+            <div className="bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 p-6 rounded-xl shadow-2xl border border-orange-700">
+              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 text-center">
+                Prize: {gameOfTheDay.rewardAmount} ETH
+              </h3>
+              <p className="text-gray-100 text-sm md:text-base text-center">
+                Entry Fee:{" "}
+                {gameOfTheDay.isPaidEntry
+                  ? `${gameOfTheDay.entryFee} ETH`
+                  : "Free"}
+              </p>
+              <p className="text-gray-100 text-sm md:text-base text-center">
+                Participants: {gameOfTheDay.currentParticipants}/
+                {gameOfTheDay.maxParticipants}
+              </p>
+              <p className="text-gray-100 text-sm md:text-base text-center">
+                Winners: {gameOfTheDay.numWinners}
+              </p>
+              <div className="flex justify-center mt-4">
+                <Link
+                  to="/available"
+                  className="py-2 px-6 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-lg transition-colors duration-200 shadow-lg"
+                >
+                  Join Now
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-300 text-sm md:text-base">
+              No active drops available
+            </div>
+          )}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          <Link
+            to="/create"
+            className="py-2 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors duration-200 shadow-lg"
+          >
+            Create Game
+          </Link>
+          <Link
+            to="/sponsor"
+            className="py-2 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors duration-200 shadow-lg"
+          >
+            Sponsor Game
+          </Link>
+          <Link
+            to="/available"
+            className="py-2 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors duration-200 shadow-lg"
+          >
+            Available
+          </Link>
+          <Link
+            to="/leaderboard"
+            className="py-2 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors duration-200 shadow-lg"
+          >
+            Leaderboard
+          </Link>
+        </div>
+
+        {/* Plinko Board Section */}
+        <div className="bg-gray-800 p-4 md:p-8 rounded-2xl shadow-2xl border border-orange-700 mb-8">
           <div className="mx-auto w-full sm:max-w-md">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
               Try the Plinko Board
             </h2>
             <div className="relative mb-6">
-              {/* This div will dictate the canvas size. aspect-[600/400] helps maintain aspect ratio via CSS. */}
               <div
                 ref={canvasRef}
-                className="w-full h-auto aspect-[600/400] bg-purple-800 rounded"
+                className="w-full h-auto aspect-[600/400] rounded"
               ></div>
               {popUp && (
                 <div
-                  className="absolute left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold py-2 px-4 sm:py-3 sm:px-5 rounded-lg shadow-lg animate-pulse text-xs sm:text-sm"
+                  className="absolute left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-2 px-4 md:py-3 md:px-5 rounded-lg shadow-lg animate-pulse text-xs md:text-sm"
                   style={{
                     top: `${popUp.y}px`,
                     opacity: popUp.alpha,
                     zIndex: 10,
-                  }} // popUp.y is canvasHeight/2
+                  }}
                 >
                   {popUp.message}
                 </div>
@@ -388,64 +447,15 @@ const IntroPage: React.FC = () => {
             </div>
             <button
               onClick={handleDropBall}
-              className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg"
+              className="w-full py-3 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors duration-200 shadow-lg"
             >
-              Try it out!
+              Drop Fireball!
             </button>
-            <p className="text-gray-300 text-center mt-4 text-sm sm:text-base">
+            <p className="text-gray-300 text-center mt-4 text-sm md:text-base">
               Watch the fireball bounce to see how it works! Join drops to win
               real rewards.
             </p>
           </div>
-        </div>
-
-        <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">
-            Largest Pots of the Day
-          </h2>
-          {loading ? (
-            <div className="flex justify-center items-center py-6">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center text-red-400 text-sm sm:text-base">
-              {error}
-            </div>
-          ) : largestPots.length === 0 ? (
-            <div className="text-center text-gray-300 text-sm sm:text-base">
-              No active drops available
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              {largestPots.map((pot, index) => (
-                <div
-                  key={pot.id}
-                  className="bg-gradient-to-br from-orange-600 via-pink-600 to-purple-700 p-4 sm:p-6 rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-200"
-                >
-                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
-                    #{index + 1} Prize: {pot.rewardAmount} ETH
-                  </h3>
-                  <p className="text-gray-200 text-xs sm:text-sm">
-                    Entry Fee:{" "}
-                    {pot.isPaidEntry ? `${pot.entryFee} ETH` : "Free"}
-                  </p>
-                  <p className="text-gray-200 text-xs sm:text-sm">
-                    Participants: {pot.currentParticipants}/
-                    {pot.maxParticipants}
-                  </p>
-                  <p className="text-gray-200 text-xs sm:text-sm">
-                    Winners: {pot.numWinners}
-                  </p>
-                  <Link
-                    to="/available"
-                    className="mt-4 inline-block py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 hover:ring-2 hover:ring-pink-500"
-                  >
-                    Join Now
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

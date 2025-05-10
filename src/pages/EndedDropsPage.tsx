@@ -76,24 +76,24 @@ const EndedDropsPage: React.FC = () => {
   const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
 
   return (
-    <div className="min-h-screen bg-purple-900 p-6">
+    <div className="min-h-screen bg-gray-900 p-6">
       <div className="w-full max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-extrabold mb-2">
-            <span className="text-orange-500">Ended</span>{" "}
-            <span className="text-pink-500">Drops</span>
+            <span className="text-red-600">Ended</span>{" "}
+            <span className="text-orange-500">Drops</span>
           </h1>
-          <div className="h-1 w-40 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full mx-auto mb-3"></div>
-          <p className="text-gray-300">View all completed Fireball Drops</p>
+          <div className="h-1 w-40 bg-gradient-to-r from-red-600 to-orange-500 rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-100">View all completed Fireball Drops</p>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
           </div>
         ) : error ? (
-          <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+          <div className="bg-gradient-to-br from-red-800 via-orange-700 to-yellow-600 p-8 rounded-2xl shadow-2xl border border-orange-500 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 text-red-400 mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-8 w-8"
@@ -109,14 +109,14 @@ const EndedDropsPage: React.FC = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-red-500 mb-2">
+            <h2 className="text-xl font-bold text-white mb-2">
               Error Loading Drops
             </h2>
-            <p className="text-gray-300">{error}</p>
+            <p className="text-gray-100">{error}</p>
           </div>
         ) : drops.length === 0 ? (
-          <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-500 mb-4">
+          <div className="bg-gradient-to-br from-red-800 via-orange-700 to-yellow-600 p-8 rounded-2xl shadow-2xl border border-orange-500 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 text-yellow-400 mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-8 w-8"
@@ -135,24 +135,24 @@ const EndedDropsPage: React.FC = () => {
             <h2 className="text-xl font-bold text-white mb-2">
               No Ended Drops
             </h2>
-            <p className="text-gray-300">
+            <p className="text-gray-100">
               There are currently no completed drops to view
             </p>
             <button
               onClick={() => (window.location.href = "/create")}
-              className="mt-4 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg"
+              className="mt-4 py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg"
             >
               Create New Drop
             </button>
           </div>
         ) : (
-          <div className="bg-gray-900 bg-opacity-90 p-8 rounded-2xl shadow-2xl border border-purple-800">
+          <div className="bg-gradient-to-br from-red-800 via-orange-700 to-yellow-600 p-8 rounded-2xl shadow-2xl border border-orange-500">
             <DropList drops={currentDrops} />
             <div className="mt-6 flex justify-between items-center text-white">
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -163,7 +163,7 @@ const EndedDropsPage: React.FC = () => {
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-2 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
